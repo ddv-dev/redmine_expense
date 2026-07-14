@@ -104,7 +104,7 @@
   <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
     <% if @mismatches.any? %>
       <p><strong>Действия с расхождениями:</strong></p>
-      <%= form_tag confirm_import_path, method: :post do %>
+      <%= form_tag '/import/confirm', method: :post do %>
         <!-- Скрытое поле с ID данных -->
         <%= hidden_field_tag :data_id, local_assigns[:data_id] %>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -115,7 +115,7 @@
       <% end %>
     <% else %>
       <p><strong>✅ Все позиции совпадают. Можно импортировать.</strong></p>
-      <%= form_tag confirm_import_path, method: :post do %>
+      <%= form_tag '/import/confirm', method: :post do %>
         <!-- Скрытое поле с ID данных -->
         <%= hidden_field_tag :data_id, local_assigns[:data_id] %>
         <%= submit_tag 'Подтвердить импорт', class: 'btn btn-primary', style: 'padding: 8px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;' %>
