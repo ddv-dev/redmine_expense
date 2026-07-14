@@ -2,6 +2,33 @@
 
 <%= render 'shared/expense_menu' %>
 
+<%= form_tag history_index_path, method: :get, id: 'history-filters', style: 'margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;' do %>
+  <div>
+    <label style="display:block; font-size:12px; color:#666;">Дата с</label>
+    <%= date_field_tag :start_date, @filter_start_date %>
+  </div>
+  <div>
+    <label style="display:block; font-size:12px; color:#666;">Дата по</label>
+    <%= date_field_tag :end_date, @filter_end_date %>
+  </div>
+  <div>
+    <label style="display:block; font-size:12px; color:#666;">Пользователь</label>
+    <%= select_tag :user_id,
+          options_from_collection_for_select(@users, :id, :name, @filter_user_id),
+          include_blank: 'Все' %>
+  </div>
+  <div>
+    <label style="display:block; font-size:12px; color:#666;">Материал</label>
+    <%= select_tag :material_stock_id,
+          options_from_collection_for_select(@material_stocks, :id, :display_name, @filter_material_stock_id),
+          include_blank: 'Все' %>
+  </div>
+  <div>
+    <%= submit_tag 'Фильтровать', class: 'btn btn-primary' %>
+    <%= link_to 'Сбросить', history_index_path, class: 'btn btn-secondary' %>
+  </div>
+<% end %>
+
 <% if @histories.any? %>
   <table class="list">
     <thead>
@@ -19,7 +46,7 @@
     <tbody>
       <% @histories.each do |history| %>
         <tr>
-          <td><%= history.id %></td>
+          <td><%= link_to history.id, history_show_path(history) %></td>
           <td>
             <% if history.issue_id %>
               <%= link_to "##{history.issue_id}", issue_path(history.issue_id) %>
@@ -43,6 +70,8 @@
       <% end %>
     </tbody>
   </table>
+
+  <%= paginate @history_pages %>
 <% else %>
   <p class="nodata">Нет данных о списаниях</p>
 <% end %>

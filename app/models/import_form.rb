@@ -16,6 +16,7 @@ class ImportForm
     errors = []
     skipped = 0
     skipped_details = []
+    seen_hashes = {}
     
     begin
       workbook = Roo::Excelx.new(file_to_read)
@@ -93,13 +94,30 @@ class ImportForm
           next
         end
         
+        hash_key = MaterialStock.build_hash_key(material_type, brand, model)
+
+        if seen_hashes[hash_key]
+          skipped += 1
+          skipped_details << {
+            row_number: index + 1,
+            material_type: material_type,
+            model: model,
+            brand: brand,
+            quantity: quantity,
+            reasons: ["дубликат в файле (строка #{seen_hashes[hash_key]})"],
+            raw_data: row.compact.join(' | ')
+          }
+          next
+        end
+        seen_hashes[hash_key] = index + 1
+
         # Все ок, добавляем
         data << {
           material_type: material_type[0..499],
           brand: brand[0..499],
           model: model[0..499],
           quantity: quantity,
-          hash_key: Digest::MD5.hexdigest("#{material_type.strip.downcase}|#{brand.strip.downcase}|#{model.strip.downcase}"),
+          hash_key: hash_key,
           row_number: index + 1
         }
       end
@@ -171,15 +189,25 @@ class ImportForm
     }
   end
   
-  def import_from_data!(preview_result)
+  # keep_current: true  -> для позиций с расхождением количества оставляем текущий остаток в БД
+  # keep_current: false -> перезаписываем остаток значением из файла (по умолчанию)
+  def import_from_data!(preview_result, keep_current: false)
     updated_count = 0
     created_count = 0
+    kept_count = 0
     errors = []
-    
+    mismatched_ids = (preview_result[:mismatches] || []).map { |m| m[:material_stock_id] || m['material_stock_id'] }.to_set
+
     preview_result[:data].each_with_index do |item, index|
       begin
         if item[:status] == 'exists'
           material = MaterialStock.find(item[:material_stock_id])
+
+          if keep_current && mismatched_ids.include?(material.id)
+            kept_count += 1
+            next
+          end
+
           if material.update(quantity: item[:quantity])
             updated_count += 1
           else
@@ -217,6 +245,7 @@ class ImportForm
       success: errors.empty?,
       updated_count: updated_count,
       created_count: created_count,
+      kept_count: kept_count,
       total: preview_result[:total],
       errors: errors
     }

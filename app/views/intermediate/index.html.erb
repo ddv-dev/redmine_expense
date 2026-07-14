@@ -33,12 +33,12 @@
           <td><%= format_time(item.created_at) %></td>
           <td><%= item.status %></td>
           <td>
-            <% if item.pending? %>
-              <%= link_to '✅ Подтвердить', approve_intermediate_path(item), method: :put, 
-                      data: { confirm: 'Подтвердить списание?' }, 
+            <% if item.pending? && (User.current.admin? || User.current.allowed_to?(:approve_expense, nil, global: true)) %>
+              <%= link_to '✅ Подтвердить', approve_intermediate_path(item), method: :put,
+                      data: { confirm: 'Подтвердить списание?' },
                       style: 'padding: 2px 8px; color: green; text-decoration: none;' %>
-              <%= link_to '❌ Отклонить', reject_intermediate_path(item), method: :put, 
-                      data: { confirm: 'Отклонить списание?' }, 
+              <%= link_to '❌ Отклонить', reject_intermediate_path(item), method: :put,
+                      data: { confirm: 'Отклонить списание?' },
                       style: 'padding: 2px 8px; color: red; text-decoration: none;' %>
             <% else %>
               <span style="color: #999;"><%= item.status %></span>
@@ -48,6 +48,8 @@
       <% end %>
     </tbody>
   </table>
+
+  <%= paginate @intermediate_pages %>
 <% else %>
   <p class="nodata">Нет записей, ожидающих подтверждения</p>
 <% end %>

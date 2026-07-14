@@ -1,0 +1,9 @@
+ru:
+  project_module_expense: "Расход"
+  label_expense: "Расход"
+
+  permission_view_expense_history: "Просмотр истории списаний"
+  permission_view_expense_stock: "Просмотр остатков по складу"
+  permission_manage_expense_stock: "Управление складом (импорт/экспорт)"
+  permission_view_intermediate_expense: "Просмотр ожидающих подтверждения списаний"
+  permission_approve_expense: "Подтверждение/отклонение списаний"

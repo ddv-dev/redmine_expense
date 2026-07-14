@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 13px; color: #222; margin: 20px; }
+  h1 { font-size: 20px; margin: 0 0 15px; }
+  .meta p { margin: 2px 0; }
+  table.materials { width: 100%; border-collapse: collapse; margin: 20px 0; }
+  table.materials th, table.materials td { border: 1px solid #333; padding: 6px 8px; text-align: left; font-size: 12px; }
+  table.materials th { background: #f0f0f0; }
+  .signatures-title { font-weight: bold; margin: 20px 0 8px; }
+  table.signatures { width: 100%; border-collapse: collapse; }
+  table.signatures td { border: 1px solid #333; padding: 10px; vertical-align: top; width: 50%; font-size: 12px; }
+  table.signatures p { margin: 3px 0; }
+  .sig-label { font-weight: bold; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+  <h1>Заказ-наряд по задаче #<%= issue.id %></h1>
+
+  <div class="meta">
+    <p><%= issue.subject %></p>
+    <p>Проект: <%= issue.project&.name %></p>
+    <p>Автор: <%= issue.author&.name %></p>
+    <p>Дата формирования: <%= format_date(Date.current) %></p>
+  </div>
+
+  <table class="materials">
+    <thead>
+      <tr>
+        <th>Тип материала</th>
+        <th>Бренд</th>
+        <th>Модель</th>
+        <th>Кол-во</th>
+        <th>Комментарий</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% histories.each do |history| %>
+        <tr>
+          <td><%= history.material_stock&.material_type %></td>
+          <td><%= history.material_stock&.brand %></td>
+          <td><%= history.material_stock&.model %></td>
+          <td><%= history.quantity_used %></td>
+          <td><%= history.material_stock&.description %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div class="signatures-title">Электронные подписи</div>
+  <table class="signatures">
+    <tr>
+      <td>
+        <div class="sig-label">Принял (создал задачу)</div>
+        <p>ФИО: <%= accepted_by&.name %></p>
+        <p>Логин: <%= accepted_by&.login %></p>
+        <p>Дата/время: <%= accepted_at ? format_time(accepted_at) : '-' %></p>
+      </td>
+      <td>
+        <div class="sig-label">Списал (добавил материалы)</div>
+        <p>ФИО: <%= issued_by&.name %></p>
+        <p>Логин: <%= issued_by&.login %></p>
+        <p>Дата/время: <%= issued_at ? format_time(issued_at) : '-' %></p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

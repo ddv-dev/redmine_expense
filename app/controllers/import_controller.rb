@@ -2,9 +2,9 @@ require "securerandom"
 require "json"
 
 class ImportController < ApplicationController
-  before_action :require_login
-  before_action :check_permission
-  skip_before_action :verify_authenticity_token, only: [:preview, :confirm]
+  include ExpenseAuthorization
+
+  before_action { require_expense_permission(:manage_expense_stock) }
 
   def new
     @import = ImportForm.new
@@ -53,39 +53,41 @@ class ImportController < ApplicationController
 
   def confirm
     data_id = params[:data_id]
-    
-    if data_id.blank?
+
+    unless data_id.present? && data_id.match?(/\A[a-f0-9]{32}\z/)
       render json: { success: false, errors: ['Данные не найдены'] }
       return
     end
-    
+
     data_file = import_data_path(data_id)
-    
+
     if !File.exist?(data_file)
       render json: { success: false, errors: ['Данные не найдены'] }
       return
     end
-    
+
     import_data = JSON.parse(File.read(data_file), symbolize_names: true)
-    
+
     @import = ImportForm.new
     preview_result = @import.preview_from_data(import_data)
-    
-    result = @import.import_from_data!(preview_result)
-    
+
+    keep_current = params[:commit] == 'Оставить текущее'
+    result = @import.import_from_data!(preview_result, keep_current: keep_current)
+
     File.delete(data_file) if File.exist?(data_file)
-    
+
     if result[:success]
-      render json: { 
-        success: true, 
-        message: "Импорт выполнен! Создано: #{result[:created_count]}, Обновлено: #{result[:updated_count]}, Всего: #{preview_result[:total]}"
+      render json: {
+        success: true,
+        message: "Импорт выполнен! Создано: #{result[:created_count]}, Обновлено: #{result[:updated_count]}, Оставлено без изменений: #{result[:kept_count]}, Всего: #{preview_result[:total]}"
       }
     else
-      render json: { 
-        success: false, 
+      render json: {
+        success: false,
         errors: result[:errors],
         created: result[:created_count],
         updated: result[:updated_count],
+        kept: result[:kept_count],
         total: preview_result[:total]
       }
     end
@@ -126,12 +128,6 @@ class ImportController < ApplicationController
     
     Dir.glob(temp_dir.join('*')).each do |file|
       File.delete(file) if File.mtime(file) < 1.hour.ago rescue nil
-    end
-  end
-
-  def check_permission
-    unless User.current.allowed_to?(:manage_expense_stock, nil, global: true)
-      render_403
     end
   end
 

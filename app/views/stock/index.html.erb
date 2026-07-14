@@ -17,6 +17,12 @@
   </div>
 </div>
 
+<% if expense_authorized?(:manage_expense_stock) %>
+  <div style="margin-bottom: 15px;">
+    <%= link_to '📥 Экспорт в Excel', export_stock_path, class: 'btn btn-primary' %>
+  </div>
+<% end %>
+
 <table class="list">
   <thead>
     <tr>
@@ -25,18 +31,26 @@
       <th>Модель</th>
       <th>Количество</th>
       <th>Описание</th>
+      <% if expense_authorized?(:manage_expense_stock) %>
+        <th>Действия</th>
+      <% end %>
     </tr>
   </thead>
   <tbody>
     <% @materials.each do |material| %>
-      <tr>
+      <tr id="material-row-<%= material.id %>">
         <td><%= material.material_type %></td>
         <td><%= material.brand %></td>
         <td><%= material.model %></td>
-        <td style="<%= 'color: red; font-weight: bold;' if material.quantity < 10 %>">
+        <td style="<%= 'color: red; font-weight: bold;' if material.low_stock? %>">
           <%= material.quantity %>
         </td>
         <td><%= material.description %></td>
+        <% if expense_authorized?(:manage_expense_stock) %>
+          <td>
+            <a href="#" class="edit-material-link" data-id="<%= material.id %>" title="Редактировать">✏️</a>
+          </td>
+        <% end %>
       </tr>
     <% end %>
   </tbody>
@@ -45,3 +59,98 @@
 <% if @materials.empty? %>
   <p class="nodata">Нет материалов на складе</p>
 <% end %>
+
+<%= paginate @material_pages %>
+
+<div id="stock-edit-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+  <div style="background:white; max-width:420px; margin:80px auto; padding:20px; border-radius:8px;">
+    <h3>Редактировать материал</h3>
+    <div id="stock-edit-error" style="display:none; color:#dc3545; margin-bottom:10px;"></div>
+    <p>
+      <label>Тип материала</label><br>
+      <input type="text" id="edit-material-type" style="width:100%;">
+    </p>
+    <p>
+      <label>Бренд</label><br>
+      <input type="text" id="edit-brand" style="width:100%;">
+    </p>
+    <p>
+      <label>Модель</label><br>
+      <input type="text" id="edit-model" style="width:100%;">
+    </p>
+    <p>
+      <label>Количество</label><br>
+      <input type="number" step="0.01" min="0" id="edit-quantity" style="width:100%;">
+    </p>
+    <p>
+      <label>Описание</label><br>
+      <textarea id="edit-description" style="width:100%;"></textarea>
+    </p>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button type="button" id="stock-edit-cancel" class="btn btn-secondary">Отмена</button>
+      <button type="button" id="stock-edit-save" class="btn btn-primary">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var modal = document.getElementById('stock-edit-modal');
+  var currentId = null;
+
+  document.querySelectorAll('.edit-material-link').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      currentId = this.dataset.id;
+      document.getElementById('stock-edit-error').style.display = 'none';
+
+      fetch('/stock/' + currentId + '/edit', { headers: { 'Accept': 'application/json' } })
+        .then(function(r) { return r.json(); })
+        .then(function(material) {
+          document.getElementById('edit-material-type').value = material.material_type || '';
+          document.getElementById('edit-brand').value = material.brand || '';
+          document.getElementById('edit-model').value = material.model || '';
+          document.getElementById('edit-quantity').value = material.quantity || 0;
+          document.getElementById('edit-description').value = material.description || '';
+          modal.style.display = 'block';
+        });
+    });
+  });
+
+  document.getElementById('stock-edit-cancel').addEventListener('click', function() {
+    modal.style.display = 'none';
+  });
+
+  document.getElementById('stock-edit-save').addEventListener('click', function() {
+    var payload = {
+      material_stock: {
+        material_type: document.getElementById('edit-material-type').value,
+        brand: document.getElementById('edit-brand').value,
+        model: document.getElementById('edit-model').value,
+        quantity: document.getElementById('edit-quantity').value,
+        description: document.getElementById('edit-description').value
+      }
+    };
+
+    fetch('/stock/' + currentId, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          location.reload();
+        } else {
+          var errorBox = document.getElementById('stock-edit-error');
+          errorBox.textContent = (data.errors || ['Ошибка сохранения']).join(', ');
+          errorBox.style.display = 'block';
+        }
+      });
+  });
+});
+</script>

@@ -1,5 +1,7 @@
 <h2>📄 Детали списания #<%= @history.id %></h2>
 
+<%= render 'shared/expense_menu' %>
+
 <div class="box">
   <p><strong>Задача:</strong> 
     <% if @history.issue_id %>
