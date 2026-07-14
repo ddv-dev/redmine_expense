@@ -1,0 +1,53 @@
+<h2>⏳ Ожидают подтверждения</h2>
+
+<%= render 'shared/expense_menu' %>
+
+<% if @intermediates.any? %>
+  <table class="list">
+    <thead>
+      <tr>
+        <th>Задача</th>
+        <th>Материал</th>
+        <th>Количество</th>
+        <th>Кто добавил</th>
+        <th>Автор задачи</th>
+        <th>Дата</th>
+        <th>Статус</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @intermediates.each do |item| %>
+        <tr>
+          <td>
+            <% if item.issue_id %>
+              <%= link_to "##{item.issue_id}", issue_path(item.issue_id) %>
+            <% else %>
+              -
+            <% end %>
+          </td>
+          <td><%= item.material_stock&.display_name || 'Удален' %></td>
+          <td><%= item.quantity_used %></td>
+          <td><%= item.user&.name || 'Неизвестен' %></td>
+          <td><%= item.author&.name || 'Неизвестен' %></td>
+          <td><%= format_time(item.created_at) %></td>
+          <td><%= item.status %></td>
+          <td>
+            <% if item.pending? %>
+              <%= link_to '✅ Подтвердить', approve_intermediate_path(item), method: :put, 
+                      data: { confirm: 'Подтвердить списание?' }, 
+                      style: 'padding: 2px 8px; color: green; text-decoration: none;' %>
+              <%= link_to '❌ Отклонить', reject_intermediate_path(item), method: :put, 
+                      data: { confirm: 'Отклонить списание?' }, 
+                      style: 'padding: 2px 8px; color: red; text-decoration: none;' %>
+            <% else %>
+              <span style="color: #999;"><%= item.status %></span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p class="nodata">Нет записей, ожидающих подтверждения</p>
+<% end %>

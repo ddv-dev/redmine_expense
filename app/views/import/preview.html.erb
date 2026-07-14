@@ -1,0 +1,126 @@
+<h2>📊 Предпросмотр импорта</h2>
+
+<%= render 'shared/expense_menu' %>
+
+<% if @preview_result[:errors].any? %>
+  <div class="flash error" style="background: #f8d7da; padding: 15px; border: 1px solid #f5c6cb; border-radius: 4px; margin-bottom: 20px;">
+    <h3>❌ Ошибки в файле:</h3>
+    <ul>
+      <% @preview_result[:errors].each do |error| %>
+        <li><%= error %></li>
+      <% end %>
+    </ul>
+    <p><%= link_to '← Вернуться назад', new_import_path, class: 'btn btn-secondary' %></p>
+  </div>
+<% else %>
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0;">
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+      <h3><%= @preview_result[:total] %></h3>
+      <p>Всего позиций</p>
+    </div>
+    <div style="background: #d4edda; padding: 15px; border-radius: 8px; text-align: center;">
+      <h3><%= @preview_result[:existing] %></h3>
+      <p>Существует в БД</p>
+    </div>
+    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; text-align: center;">
+      <h3><%= @preview_result[:new] %></h3>
+      <p>Новых позиций</p>
+    </div>
+    <div style="background: <%= @mismatches.any? ? '#f8d7da' : '#d4edda' %>; padding: 15px; border-radius: 8px; text-align: center;">
+      <h3><%= @mismatches.size %></h3>
+      <p>Расхождений по количеству</p>
+    </div>
+  </div>
+
+  <h3>📋 Данные для импорта</h3>
+  
+  <% if @mismatches.any? %>
+    <div class="flash warning" style="background: #fff3cd; padding: 15px; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 20px;">
+      <h3>⚠️ Обнаружены расхождения в количестве</h3>
+      <table class="list">
+        <thead>
+          <tr>
+            <th>Материал</th>
+            <th>Текущее количество</th>
+            <th>Новое количество</th>
+            <th>Разница</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @mismatches.each do |mismatch| %>
+            <tr>
+              <td><%= mismatch[:material] %></td>
+              <td><%= mismatch[:current_quantity] %></td>
+              <td style="color: <%= mismatch[:new_quantity] > mismatch[:current_quantity] ? 'green' : 'red' %>; font-weight: bold;">
+                <%= mismatch[:new_quantity] %>
+              </td>
+              <td style="color: <%= mismatch[:new_quantity] > mismatch[:current_quantity] ? 'green' : 'red' %>;">
+                <%= (mismatch[:new_quantity] - mismatch[:current_quantity]).round(2) %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+
+  <table class="list" style="font-size: 13px;">
+    <thead>
+      <tr>
+        <th>Строка</th>
+        <th>Тип материала</th>
+        <th>Бренд</th>
+        <th>Модель</th>
+        <th>Количество</th>
+        <th>Текущее кол-во</th>
+        <th>Статус</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @preview_result[:data].first(50).each do |item| %>
+        <tr>
+          <td><%= item[:row_number] %></td>
+          <td><%= item[:material_type] %></td>
+          <td><%= item[:brand] %></td>
+          <td><%= item[:model] %></td>
+          <td><%= item[:quantity] %></td>
+          <td><%= item[:current_quantity] || '-' %></td>
+          <td>
+            <% if item[:status] == 'new' %>
+              <span style="color: green;">🆕 Новый</span>
+            <% else %>
+              <span style="color: blue;">🔄 Существует</span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  
+  <% if @preview_result[:total] > 50 %>
+    <p style="color: #666; text-align: center;">Показано 50 из <%= @preview_result[:total] %> записей</p>
+  <% end %>
+
+  <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+    <% if @mismatches.any? %>
+      <p><strong>Действия с расхождениями:</strong></p>
+      <%= form_tag confirm_import_path, method: :post do %>
+        <!-- Скрытое поле с ID данных -->
+        <%= hidden_field_tag :data_id, local_assigns[:data_id] %>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <%= submit_tag 'Оставить текущее', class: 'btn btn-secondary', style: 'padding: 8px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;' %>
+          <%= submit_tag 'Продолжить с новым кол-вом', class: 'btn btn-primary', style: 'padding: 8px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;' %>
+          <%= link_to 'Отмена', new_import_path, class: 'btn btn-danger', style: 'padding: 8px 20px; background: #dc3545; color: white; text-decoration: none; border-radius: 4px;' %>
+        </div>
+      <% end %>
+    <% else %>
+      <p><strong>✅ Все позиции совпадают. Можно импортировать.</strong></p>
+      <%= form_tag confirm_import_path, method: :post do %>
+        <!-- Скрытое поле с ID данных -->
+        <%= hidden_field_tag :data_id, local_assigns[:data_id] %>
+        <%= submit_tag 'Подтвердить импорт', class: 'btn btn-primary', style: 'padding: 8px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;' %>
+        <%= link_to 'Отмена', new_import_path, class: 'btn btn-danger', style: 'padding: 8px 20px; background: #dc3545; color: white; text-decoration: none; border-radius: 4px;' %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,45 @@
+.expense-fields {
+  margin: 20px 0;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #f9f9f9;
+}
+
+.expense-fields .expense-materials {
+  padding: 10px 0;
+}
+
+.expense-material-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+}
+
+.expense-material-select {
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.expense-quantity-input {
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.expense-material-row .remove-expense-material {
+  margin-left: 10px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.expense-material-row .remove-expense-material:hover {
+  color: #d9534f !important;
+}

@@ -1,0 +1,27 @@
+<h2>📄 Детали списания #<%= @history.id %></h2>
+
+<div class="box">
+  <p><strong>Задача:</strong> 
+    <% if @history.issue_id %>
+      <%= link_to "##{@history.issue_id}", issue_path(@history.issue_id) %>
+    <% else %>
+      -
+    <% end %>
+  </p>
+  <p><strong>Материал:</strong> <%= @history.material_stock&.display_name || 'Удален' %></p>
+  <p><strong>Количество:</strong> <%= @history.quantity_used %></p>
+  <p><strong>Кто списал:</strong> <%= @history.user&.name || 'Неизвестен' %></p>
+  <p><strong>Кто закрыл задачу:</strong> <%= @history.closer&.name || 'Неизвестен' %></p>
+  <p><strong>Дата списания:</strong> <%= format_time(@history.closed_at) %></p>
+  
+  <% if @history.pdf_generated && @history.pdf_file.present? %>
+    <p>
+      <strong>PDF:</strong> 
+      <%= link_to '📄 Скачать PDF', download_pdf_history_path(@history) %>
+    </p>
+  <% end %>
+</div>
+
+<p>
+  <%= link_to '← Назад к истории', history_index_path, class: 'btn btn-secondary' %>
+</p>

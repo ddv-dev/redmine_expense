@@ -1,0 +1,48 @@
+<h2>📋 История списаний</h2>
+
+<%= render 'shared/expense_menu' %>
+
+<% if @histories.any? %>
+  <table class="list">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Задача</th>
+        <th>Материал</th>
+        <th>Количество</th>
+        <th>Кто списал</th>
+        <th>Кто закрыл</th>
+        <th>Дата</th>
+        <th>PDF</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @histories.each do |history| %>
+        <tr>
+          <td><%= history.id %></td>
+          <td>
+            <% if history.issue_id %>
+              <%= link_to "##{history.issue_id}", issue_path(history.issue_id) %>
+            <% else %>
+              -
+            <% end %>
+          </td>
+          <td><%= history.material_stock&.display_name || 'Удален' %></td>
+          <td><%= history.quantity_used %></td>
+          <td><%= history.user&.name || 'Неизвестен' %></td>
+          <td><%= history.closer&.name || 'Неизвестен' %></td>
+          <td><%= format_time(history.closed_at) %></td>
+          <td>
+            <% if history.pdf_generated && history.pdf_file.present? %>
+              <%= link_to '📄 Скачать PDF', download_pdf_history_path(history) %>
+            <% else %>
+              <span style="color: #999;">Нет</span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p class="nodata">Нет данных о списаниях</p>
+<% end %>

@@ -1,0 +1,202 @@
+<style>
+  .settings-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #f9f9f9;
+    overflow: hidden;
+  }
+  .settings-section .section-title {
+    font-weight: bold;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 10px;
+    color: #333;
+    border-bottom: 2px solid #3e5b76;
+    padding-bottom: 5px;
+  }
+  .checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px 20px;
+    padding: 5px 0;
+  }
+  .checkbox-grid label {
+    display: flex;
+    align-items: center;
+    padding: 2px 0;
+    font-weight: normal;
+    cursor: pointer;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .checkbox-grid input[type="checkbox"],
+  .checkbox-grid input[type="radio"] {
+    margin-right: 8px;
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Настройка для .tabular.settings label */
+  .tabular.settings label {
+    margin-left: 10px;
+    width: 295px;
+  }
+
+  .settings-hint {
+    display: block;
+    margin-top: 10px;
+    color: #666;
+    font-size: 0.85em;
+    font-style: italic;
+    padding: 5px 0 0 0;
+    border-top: 1px dashed #ddd;
+    clear: both;
+  }
+  .role-select {
+    padding: 8px 10px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    font-size: 13px;
+    height: 38px;
+    box-sizing: border-box;
+  }
+  .submit-wrapper {
+    margin-top: 20px;
+    text-align: center;
+    clear: both;
+  }
+  .submit-button {
+    padding: 8px 30px;
+    background: #f0f0f0;
+    color: #333333;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: bold;
+    height: auto !important;
+  }
+  .submit-button:hover {
+    background: #e0e0e0;
+  }
+  .radio-group {
+    display: block;
+    padding: 5px 0;
+  }
+  .radio-group label {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 20px;
+    padding: 2px 0;
+    font-weight: normal;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .radio-group input[type="radio"] {
+    margin-right: 8px;
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+  }
+</style>
+
+<h2>Настройки плагина "Расход"</h2>
+
+<%= form_tag({:controller => 'settings', :action => 'plugin', :id => 'redmine_expense'}, :method => :post) do %>
+
+  <!-- Проекты -->
+  <div class="settings-section">
+    <span class="section-title">Проекты</span>
+    <div class="checkbox-grid">
+      <% Project.all.each do |project| %>
+        <label>
+          <%= check_box_tag 'settings[project_ids][]', project.id, @settings['project_ids'].to_a.include?(project.id.to_s) %>
+          <%= project.name %>
+        </label>
+      <% end %>
+    </div>
+    <span class="settings-hint">Выберите проекты, в которых будет доступен плагин</span>
+  </div>
+
+  <!-- Трекеры -->
+  <div class="settings-section">
+    <span class="section-title">Трекеры</span>
+    <div class="checkbox-grid">
+      <% Tracker.all.each do |tracker| %>
+        <label>
+          <%= check_box_tag 'settings[tracker_ids][]', tracker.id, @settings['tracker_ids'].to_a.include?(tracker.id.to_s) %>
+          <%= tracker.name %>
+        </label>
+      <% end %>
+    </div>
+    <span class="settings-hint">Выберите трекеры, для которых будет доступен функционал</span>
+  </div>
+
+  <!-- Статус "В работе" -->
+  <div class="settings-section">
+    <span class="section-title">Статус "В работе"</span>
+    <div class="radio-group">
+      <% IssueStatus.all.each do |status| %>
+        <label>
+          <%= radio_button_tag 'settings[status_in_progress]', status.id, @settings['status_in_progress'].to_s == status.id.to_s %>
+          <%= status.name %>
+        </label>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Статус "Решена" -->
+  <div class="settings-section">
+    <span class="section-title">Статус "Решена"</span>
+    <div class="radio-group">
+      <% IssueStatus.all.each do |status| %>
+        <label>
+          <%= radio_button_tag 'settings[status_resolved]', status.id, @settings['status_resolved'].to_s == status.id.to_s %>
+          <%= status.name %>
+        </label>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Статус "Закрыта" -->
+  <div class="settings-section">
+    <span class="section-title">Статус "Закрыта"</span>
+    <div class="radio-group">
+      <% IssueStatus.all.each do |status| %>
+        <label>
+          <%= radio_button_tag 'settings[status_closed]', status.id, @settings['status_closed'].to_s == status.id.to_s %>
+          <%= status.name %>
+        </label>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Роль для доступа -->
+  <div class="settings-section">
+    <span class="section-title">Роль для доступа</span>
+    <div style="padding: 10px 0;">
+      <select name="settings[expense_role_id]" class="role-select">
+        <option value="">-- Выберите роль --</option>
+        <% Role.all.each do |role| %>
+          <option value="<%= role.id %>" <%= 'selected' if @settings['expense_role_id'].to_s == role.id.to_s %>>
+            <%= role.name %>
+          </option>
+        <% end %>
+      </select>
+    </div>
+    <span class="settings-hint">Выберите роль, которая будет иметь доступ к плагину</span>
+  </div>
+
+  <div class="submit-wrapper">
+    <%= submit_tag 'Сохранить настройки', class: 'submit-button' %>
+  </div>
+
+<% end %>

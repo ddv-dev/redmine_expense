@@ -1,0 +1,346 @@
+<%= render 'shared/expense_menu' %>
+
+<%= csrf_meta_tags %>
+
+<div id="import-container">
+  <h2>📥 Импорт остатков</h2>
+  
+  <div id="import-status"></div>
+  
+  <div id="import-form">
+    <div class="box">
+      <p>Загрузите Excel файл для обновления остатков.</p>
+      <p><strong>Ожидаемая структура:</strong></p>
+      <ul>
+        <li><strong>Колонка A:</strong> Количество</li>
+        <li><strong>Колонка B:</strong> Номенклатура (тип материала)</li>
+        <li><strong>Колонка E:</strong> Наименование модификации (модель)</li>
+        <li><strong>Колонка G:</strong> Наименование поставщика (бренд)</li>
+      </ul>
+      <p><em>Первичный ключ: Номенклатура + Наименование модификации + Бренд</em></p>
+      
+      <form id="import-form-ajax" enctype="multipart/form-data">
+        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+        <div class="tabular">
+          <p>
+            <label>Файл Excel (.xlsx, .xls)</label>
+            <input type="file" id="import-file" name="import_form[file]" accept=".xlsx,.xls" required>
+          </p>
+        </div>
+        <p>
+          <button type="button" id="preview-btn" class="btn btn-primary">📊 Предпросмотр</button>
+        </p>
+      </form>
+    </div>
+  </div>
+  
+  <div id="preview-container" style="display:none;">
+    <h3>📊 Предпросмотр</h3>
+    <div id="preview-stats"></div>
+    <div id="preview-data"></div>
+    <div id="preview-actions" style="margin-top: 20px;"></div>
+  </div>
+  
+  <div id="report-container" style="display:none; margin-top: 20px;">
+    <h3>📋 Отчет об импорте</h3>
+    <div id="report-content"></div>
+  </div>
+</div>
+
+<style>
+  .import-stat {
+    display: inline-block;
+    padding: 10px 20px;
+    margin: 5px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+  }
+  .import-stat strong {
+    font-size: 20px;
+  }
+  .import-stat-label {
+    color: #666;
+    font-size: 12px;
+  }
+  .mismatch-row {
+    background: #fff3cd !important;
+  }
+  .skipped-row {
+    background: #f8d7da !important;
+  }
+  .report-section {
+    margin: 15px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .report-section h4 {
+    margin-top: 0;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const previewBtn = document.getElementById('preview-btn');
+  const fileInput = document.getElementById('import-file');
+  const previewContainer = document.getElementById('preview-container');
+  const reportContainer = document.getElementById('report-container');
+  const reportContent = document.getElementById('report-content');
+  const previewStats = document.getElementById('preview-stats');
+  const previewData = document.getElementById('preview-data');
+  const previewActions = document.getElementById('preview-actions');
+  const statusDiv = document.getElementById('import-status');
+  
+  let currentDataId = null;
+  let currentSkipped = [];
+  
+  previewBtn.addEventListener('click', function() {
+    const file = fileInput.files[0];
+    if (!file) {
+      showStatus('error', 'Пожалуйста, выберите файл');
+      return;
+    }
+    
+    const formData = new FormData();
+    formData.append('import_form[file]', file);
+    formData.append('authenticity_token', document.querySelector('meta[name="csrf-token"]').content);
+    
+    previewBtn.disabled = true;
+    previewBtn.textContent = '⏳ Загрузка...';
+    previewContainer.style.display = 'none';
+    reportContainer.style.display = 'none';
+    
+    fetch('/import/preview', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('HTTP ' + response.status);
+      }
+      return response.json();
+    })
+    .then(data => {
+      previewBtn.disabled = false;
+      previewBtn.textContent = '📊 Предпросмотр';
+      
+      if (!data.success) {
+        showStatus('error', '❌ Ошибка: ' + (data.errors || ['Неизвестная ошибка']).join('<br>'));
+        return;
+      }
+      
+      currentDataId = data.data_id;
+      currentSkipped = data.skipped_details || [];
+      
+      const totalInFile = data.total + (data.skipped || 0);
+      showStatus('success', `✅ Файл загружен. Найдено ${data.total} позиций. Пропущено: ${data.skipped || 0}`);
+      showPreview(data);
+      showReport(data);
+    })
+    .catch(error => {
+      previewBtn.disabled = false;
+      previewBtn.textContent = '📊 Предпросмотр';
+      showStatus('error', '❌ Ошибка при загрузке файла: ' + error.message);
+    });
+  });
+  
+  function showPreview(data) {
+    previewContainer.style.display = 'block';
+    
+    let statsHtml = `
+      <div style="margin: 15px 0;">
+        <span class="import-stat"><strong>${data.total}</strong> <span class="import-stat-label">Всего позиций</span></span>
+        <span class="import-stat"><strong>${data.existing}</strong> <span class="import-stat-label">Существует в БД</span></span>
+        <span class="import-stat"><strong>${data.new}</strong> <span class="import-stat-label">Новых позиций</span></span>
+        <span class="import-stat"><strong>${data.mismatches.length}</strong> <span class="import-stat-label">Расхождений по количеству</span></span>
+        <span class="import-stat" style="background: #f8d7da;"><strong>${data.skipped || 0}</strong> <span class="import-stat-label">Пропущено</span></span>
+      </div>
+    `;
+    previewStats.innerHTML = statsHtml;
+    
+    let tableHtml = `
+      <table class="list" style="font-size: 13px;">
+        <thead>
+          <tr>
+            <th>Строка</th>
+            <th>Тип материала</th>
+            <th>Бренд</th>
+            <th>Модель</th>
+            <th>Количество</th>
+            <th>Текущее кол-во</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    data.preview.data.slice(0, 50).forEach(function(item) {
+      const isMismatch = data.mismatches.some(m => m.material_stock_id === item.material_stock_id);
+      tableHtml += `
+        <tr class="${isMismatch ? 'mismatch-row' : ''}">
+          <td>${item.row_number}</td>
+          <td>${item.material_type}</td>
+          <td>${item.brand}</td>
+          <td>${item.model}</td>
+          <td>${item.quantity}</td>
+          <td>${item.current_quantity || '-'}</td>
+          <td>${item.status === 'new' ? '🆕 Новый' : '🔄 Существует'}</td>
+        </tr>
+      `;
+    });
+    
+    if (data.preview.data.length > 50) {
+      tableHtml += `<tr><td colspan="7" style="text-align: center; color: #666;">Показано 50 из ${data.total} записей</td></tr>`;
+    }
+    
+    tableHtml += '</tbody></table>';
+    previewData.innerHTML = tableHtml;
+    
+    let actionsHtml = '';
+    
+    if (data.mismatches.length > 0) {
+      actionsHtml = `
+        <div style="padding: 15px; background: #fff3cd; border-radius: 8px;">
+          <p><strong>⚠️ Обнаружены расхождения в количестве (${data.mismatches.length} позиций)</strong></p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+            <button class="btn btn-secondary" onclick="confirmImport('${currentDataId}', 'Оставить текущее')">📌 Оставить текущее</button>
+            <button class="btn btn-primary" onclick="confirmImport('${currentDataId}', 'Продолжить с новым кол-вом')">🔄 Продолжить с новым кол-вом</button>
+            <button class="btn btn-danger" onclick="cancelImport()">❌ Отмена</button>
+          </div>
+        </div>
+      `;
+    } else {
+      actionsHtml = `
+        <div style="padding: 15px; background: #d4edda; border-radius: 8px;">
+          <p><strong>✅ Все позиции совпадают. Можно импортировать.</strong></p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+            <button class="btn btn-primary" onclick="confirmImport('${currentDataId}', 'Подтвердить импорт')">✅ Подтвердить импорт</button>
+            <button class="btn btn-danger" onclick="cancelImport()">❌ Отмена</button>
+          </div>
+        </div>
+      `;
+    }
+    
+    previewActions.innerHTML = actionsHtml;
+  }
+  
+  function showReport(data) {
+    const skipped = data.skipped_details || [];
+    
+    if (skipped.length === 0) {
+      reportContainer.style.display = 'none';
+      return;
+    }
+    
+    reportContainer.style.display = 'block';
+    
+    let html = `
+      <div class="report-section" style="background: #f8d7da; border-color: #dc3545;">
+        <h4 style="color: #dc3545;">⚠️ Пропущено ${skipped.length} записей</h4>
+        <p>Эти строки не будут импортированы по указанным причинам:</p>
+        <table class="list" style="font-size: 12px;">
+          <thead>
+            <tr>
+              <th>Строка</th>
+              <th>Номенклатура</th>
+              <th>Бренд</th>
+              <th>Модель</th>
+              <th>Количество</th>
+              <th>Причина</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    skipped.forEach(function(item) {
+      html += `
+        <tr class="skipped-row">
+          <td>${item.row_number}</td>
+          <td>${item.material_type || '-'}</td>
+          <td>${item.brand || '-'}</td>
+          <td>${item.model || '-'}</td>
+          <td>${item.quantity || '-'}</td>
+          <td style="color: #dc3545;">${item.reasons.join(', ')}</td>
+        </tr>
+      `;
+    });
+    
+    html += `
+          </tbody>
+        </table>
+        <p style="margin-top: 10px; color: #666; font-size: 12px;">
+          💡 <strong>Рекомендация:</strong> Проверьте эти строки в Excel файле и исправьте указанные проблемы.
+        </p>
+      </div>
+    `;
+    
+    reportContent.innerHTML = html;
+  }
+  
+  window.confirmImport = function(dataId, commit) {
+    showStatus('info', '⏳ Выполняется импорт...');
+    
+    fetch('/import/confirm', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify({
+        data_id: dataId,
+        commit: commit
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showStatus('success', '✅ ' + data.message);
+        previewContainer.style.display = 'none';
+        fileInput.value = '';
+        setTimeout(() => location.reload(), 3000);
+      } else {
+        let errorMsg = '❌ Ошибка при импорте';
+        if (data.errors && data.errors.length > 0) {
+          errorMsg += ': ' + data.errors.slice(0, 5).join('<br>');
+          if (data.errors.length > 5) {
+            errorMsg += `<br>... и еще ${data.errors.length - 5} ошибок`;
+          }
+        }
+        showStatus('error', errorMsg);
+      }
+    })
+    .catch(error => {
+      showStatus('error', '❌ Ошибка при импорте: ' + error.message);
+    });
+  };
+  
+  window.cancelImport = function() {
+    previewContainer.style.display = 'none';
+    reportContainer.style.display = 'none';
+    showStatus('info', 'ℹ️ Импорт отменен');
+  };
+  
+  function showStatus(type, message) {
+    const colors = {
+      success: '#d4edda',
+      error: '#f8d7da',
+      info: '#d1ecf1'
+    };
+    const icons = {
+      success: '✅',
+      error: '❌',
+      info: 'ℹ️'
+    };
+    
+    statusDiv.innerHTML = `
+      <div style="padding: 15px; background: ${colors[type]}; border: 1px solid ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'}; border-radius: 4px; margin-bottom: 20px;">
+        ${icons[type]} ${message}
+      </div>
+    `;
+  }
+});
+</script>

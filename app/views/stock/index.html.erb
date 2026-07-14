@@ -1,0 +1,47 @@
+<h2>📦 Остатки по складу</h2>
+
+<%= render 'shared/expense_menu' %>
+
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0;">
+  <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
+    <h3 style="margin: 0; color: #007bff;"><%= @total_items %></h3>
+    <p style="margin: 5px 0 0; color: #666;">Всего наименований</p>
+  </div>
+  <div style="background: #d4edda; padding: 15px; border-radius: 8px; text-align: center;">
+    <h3 style="margin: 0; color: #155724;"><%= @total_quantity %></h3>
+    <p style="margin: 5px 0 0; color: #155724;">Общее количество</p>
+  </div>
+  <div style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center;">
+    <h3 style="margin: 0; color: #721c24;"><%= @low_stock %></h3>
+    <p style="margin: 5px 0 0; color: #721c24;">Мало (менее 10)</p>
+  </div>
+</div>
+
+<table class="list">
+  <thead>
+    <tr>
+      <th>Тип</th>
+      <th>Бренд</th>
+      <th>Модель</th>
+      <th>Количество</th>
+      <th>Описание</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @materials.each do |material| %>
+      <tr>
+        <td><%= material.material_type %></td>
+        <td><%= material.brand %></td>
+        <td><%= material.model %></td>
+        <td style="<%= 'color: red; font-weight: bold;' if material.quantity < 10 %>">
+          <%= material.quantity %>
+        </td>
+        <td><%= material.description %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<% if @materials.empty? %>
+  <p class="nodata">Нет материалов на складе</p>
+<% end %>

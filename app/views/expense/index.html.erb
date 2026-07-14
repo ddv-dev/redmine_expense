@@ -1,0 +1,50 @@
+<h2>📦 Плагин "Расход"</h2>
+
+<%= render 'shared/expense_menu' %>
+
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0;">
+  <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #dee2e6;">
+    <h3 style="margin: 0; color: #007bff;"><%= @total_materials %></h3>
+    <p style="margin: 5px 0 0; color: #666;">Всего материалов</p>
+  </div>
+  <div style="background: #fff3cd; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #ffc107;">
+    <h3 style="margin: 0; color: #856404;"><%= @pending_expenses %></h3>
+    <p style="margin: 5px 0 0; color: #856404;">Ожидают подтверждения</p>
+  </div>
+  <div style="background: #d4edda; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #28a745;">
+    <h3 style="margin: 0; color: #155724;"><%= @total_expenses %></h3>
+    <p style="margin: 5px 0 0; color: #155724;">Всего списаний</p>
+  </div>
+  <div style="background: #cce5ff; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #007bff;">
+    <h3 style="margin: 0; color: #004085;"><%= @total_quantity %></h3>
+    <p style="margin: 5px 0 0; color: #004085;">Общее количество</p>
+  </div>
+</div>
+
+<h3>📋 Последние добавленные материалы</h3>
+<table class="list">
+  <thead>
+    <tr>
+      <th>Тип</th>
+      <th>Бренд</th>
+      <th>Модель</th>
+      <th>Количество</th>
+      <th>Описание</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @materials.each do |material| %>
+      <tr>
+        <td><%= material.material_type %></td>
+        <td><%= material.brand %></td>
+        <td><%= material.model %></td>
+        <td><%= material.quantity %></td>
+        <td><%= material.description %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<% if @materials.empty? %>
+  <p class="nodata">Нет материалов на складе</p>
+<% end %>
