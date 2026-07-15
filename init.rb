@@ -47,15 +47,16 @@ end
 
 require File.expand_path('issue_edit_hook', __dir__)
 
-# Хук для подключения JavaScript
+# Хук для подключения JavaScript и CSS.
+# Redmine::Hook::ViewListener регистрирует свои подклассы автоматически при
+# наследовании — явный Redmine::Hook.add_listener здесь был лишним и приводил
+# к двойному подключению expense_fields.js/expense.css на каждой странице.
 class ExpenseViewHook < Redmine::Hook::ViewListener
   def view_layouts_base_html_head(context)
     javascript_include_tag('expense_fields.js', plugin: 'redmine_expense') +
       stylesheet_link_tag('expense.css', plugin: 'redmine_expense')
   end
 end
-
-Redmine::Hook.add_listener(ExpenseViewHook)
 
 # Автоматическое подтверждение списаний при переходе задачи в статус "Закрыта"
 Rails.configuration.to_prepare do
