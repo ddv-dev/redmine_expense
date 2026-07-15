@@ -40,10 +40,57 @@
 }
 
 .expense-type-select,
-.expense-brand-select,
 .expense-model-select {
   flex: 1 1 140px;
   min-width: 120px;
+}
+
+.expense-brand-wrap {
+  position: relative;
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+
+.expense-brand-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.expense-brand-suggestions {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.expense-brand-suggestions li {
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.expense-brand-suggestions li:hover {
+  background: #eef4fa;
+}
+
+.expense-brand-suggestions li.expense-brand-empty {
+  color: #999;
+  cursor: default;
+}
+
+.expense-brand-suggestions li.expense-brand-empty:hover {
+  background: none;
 }
 
 .expense-quantity-input {
