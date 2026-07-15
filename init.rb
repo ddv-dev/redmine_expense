@@ -28,7 +28,8 @@ Redmine::Plugin.register :redmine_expense do
 
     permission :manage_expense_stock, {
       stock: [:edit, :update, :export],
-      import: [:new, :preview, :confirm]
+      import: [:new, :preview, :confirm],
+      expense: [:clear_stock, :clean_pdfs]
     }, require: :loggedin
 
     permission :view_intermediate_expense, {

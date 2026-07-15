@@ -161,7 +161,47 @@ class ExpenseController < ApplicationController
     redirect_to expense_index_path
   end
 
+  # Удаляет только PDF-файлы актов, на которые больше не ссылается ни одна
+  # запись ExpenseHistory (типичный случай — после "Очистить склад", где
+  # история удаляется, а файлы актов на диске остаются). Файлы, на которые
+  # всё ещё ссылается действующая запись, никогда не трогаются.
+  def clean_pdfs
+    return unless require_expense_permission(:manage_expense_stock)
+
+    @orphaned_files = orphaned_pdf_files
+    @orphaned_size = @orphaned_files.sum { |f| File.size(f) rescue 0 }
+
+    if request.post?
+      deleted_count = 0
+
+      @orphaned_files.each do |f|
+        File.delete(f)
+        deleted_count += 1
+      rescue => e
+        Rails.logger.error "[redmine_expense] Не удалось удалить #{f}: #{e.message}"
+      end
+
+      flash[:notice] = "Удалено осиротевших PDF-файлов: #{deleted_count}"
+      redirect_to expense_index_path
+    else
+      render :clean_pdfs_confirm
+    end
+  rescue => e
+    flash[:error] = "Ошибка при очистке PDF: #{e.message}"
+    redirect_to expense_index_path
+  end
+
   private
+
+  def orphaned_pdf_files
+    dir = Rails.root.join('files', 'redmine_expense')
+    return [] unless Dir.exist?(dir)
+
+    all_files = Dir.glob(dir.join('*.pdf')).map { |f| File.expand_path(f) }
+    referenced = ExpenseHistory.where.not(pdf_file: [nil, '']).distinct.pluck(:pdf_file).map { |f| File.expand_path(f) }
+
+    all_files - referenced
+  end
 
   def find_issue
     @issue = Issue.find(params[:issue_id])

@@ -1,0 +1,42 @@
+<h2>🧹 Очистка осиротевших PDF</h2>
+
+<%= render 'shared/expense_menu' %>
+
+<div class="box" style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0;">
+  <p style="font-size: 14px; color: #856404;">
+    Здесь удаляются только PDF-файлы актов, на которые <strong>больше не ссылается ни одна запись истории</strong>
+    (например, оставшиеся на диске после «Очистить склад»). Файлы, на которые всё ещё ссылается действующая
+    запись в «История списаний», никогда не трогаются.
+  </p>
+
+  <div style="background: white; padding: 15px; border-radius: 4px; margin: 15px 0;">
+    <% if @orphaned_files.empty? %>
+      <p>Осиротевших PDF-файлов не найдено — чистить нечего.</p>
+    <% else %>
+      <p><strong>Найдено осиротевших файлов: <%= @orphaned_files.size %></strong> (<%= number_to_human_size(@orphaned_size) %>)</p>
+      <ul style="max-height: 300px; overflow-y: auto; font-size: 12px; font-family: monospace;">
+        <% @orphaned_files.first(200).each do |f| %>
+          <li><%= File.basename(f) %></li>
+        <% end %>
+        <% if @orphaned_files.size > 200 %>
+          <li>… и еще <%= @orphaned_files.size - 200 %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+</div>
+
+<div style="display: flex; gap: 15px; margin-top: 20px;">
+  <% if @orphaned_files.any? %>
+    <%= form_tag clean_pdfs_expense_path, method: :post do %>
+      <%= submit_tag "🗑️ Удалить #{@orphaned_files.size} файлов",
+          class: 'btn btn-danger',
+          style: 'padding: 10px 30px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;',
+          data: { confirm: 'Удалить осиротевшие PDF-файлы? Это действие нельзя отменить.' } %>
+    <% end %>
+  <% end %>
+
+  <%= link_to '❌ Отмена', expense_index_path,
+      class: 'btn btn-secondary',
+      style: 'padding: 10px 30px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px;' %>
+</div>

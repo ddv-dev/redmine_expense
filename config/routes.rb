@@ -15,6 +15,10 @@ Rails.application.routes.draw do
   get '/expense/clear_stock', to: 'expense#clear_stock', as: 'clear_stock_expense'
   post '/expense/clear_stock', to: 'expense#clear_stock'
 
+  # Очистка осиротевших PDF-файлов актов
+  get '/expense/clean_pdfs', to: 'expense#clean_pdfs', as: 'clean_pdfs_expense'
+  post '/expense/clean_pdfs', to: 'expense#clean_pdfs'
+
   # Склад
   get '/stock', to: 'stock#index', as: 'stock_index'
   get '/stock/export', to: 'stock#export', as: 'export_stock'

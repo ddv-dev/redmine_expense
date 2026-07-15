@@ -30,7 +30,10 @@
   </div>
 
   <% if expense_authorized?(:manage_expense_stock) %>
-    <div style="margin-left: auto;">
+    <div style="margin-left: auto; display: flex; gap: 10px;">
+      <%= link_to '🧹 Очистить старые PDF', clean_pdfs_expense_path,
+          class: 'btn btn-secondary',
+          style: 'padding: 8px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px;' %>
       <%= link_to '🗑️ Очистить склад', clear_stock_expense_path,
           class: 'btn btn-danger',
           style: 'padding: 8px 20px; background: #dc3545; color: white; text-decoration: none; border-radius: 4px;' %>
