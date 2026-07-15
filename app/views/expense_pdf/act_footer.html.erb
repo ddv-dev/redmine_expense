@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: DejaVu Sans, Arial, sans-serif;
+  }
+
+  /* Область footer'а в wkhtmltopdf зарезервирована отдельно от основного
+     контента (высота = margin-bottom страницы), поэтому здесь ничего не
+     может наложиться на таблицу материалов. align-items: flex-end + 2cm
+     нижний отступ прижимают штампы точно к 2 см от нижнего края листа. */
+  .esign-wrap {
+    height: 100%;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0 20px 2cm;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  table.esign-table { width: 100%; border-collapse: collapse; }
+  table.esign-table td { vertical-align: top; width: 50%; padding: 0 10px 0 0; }
+  table.esign-table td:last-child { padding-right: 0; }
+  .sig-label { font-weight: bold; margin-bottom: 6px; color: #222; font-size: 13px; }
+  .esign-box { border: 2px solid #2b57d6; border-radius: 4px; padding: 12px 14px; color: #2b57d6; }
+  .esign-box p { margin: 3px 0; font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="esign-wrap">
+    <table class="esign-table">
+      <tr>
+        <td>
+          <div class="sig-label">Принял</div>
+          <div class="esign-box">
+            <p>Документ подписан простой электронной подписью</p>
+            <p>Информация о владельце:</p>
+            <p>ФИО: <%= accepted_by&.name %></p>
+            <p>Логин: <%= accepted_by&.login %></p>
+            <p>Дата подписания: <%= accepted_at ? format_time(accepted_at) : '-' %></p>
+          </div>
+        </td>
+        <td>
+          <div class="sig-label">Выдал</div>
+          <div class="esign-box">
+            <p>Документ подписан простой электронной подписью</p>
+            <p>Информация о владельце:</p>
+            <p>ФИО: <%= issued_by&.name %></p>
+            <p>Логин: <%= issued_by&.login %></p>
+            <p>Дата подписания: <%= issued_at ? format_time(issued_at) : '-' %></p>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

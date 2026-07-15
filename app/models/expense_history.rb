@@ -27,20 +27,26 @@ class ExpenseHistory < ActiveRecord::Base
 
     last_history = histories.max_by(&:closed_at)
 
-    html = ApplicationController.render(
-      template: 'expense_pdf/act',
-      layout: false,
-      locals: {
-        issue: issue,
-        histories: histories,
-        accepted_by: issue.author,
-        accepted_at: issue.created_on,
-        issued_by: last_history&.user,
-        issued_at: last_history&.closed_at
-      }
-    )
+    render_locals = {
+      issue: issue,
+      histories: histories,
+      accepted_by: issue.author,
+      accepted_at: issue.created_on,
+      issued_by: last_history&.user,
+      issued_at: last_history&.closed_at
+    }
 
-    pdf_options = { encoding: 'UTF-8' }
+    html = ApplicationController.render(template: 'expense_pdf/act', layout: false, locals: render_locals)
+    footer_html = ApplicationController.render(template: 'expense_pdf/act_footer', layout: false, locals: render_locals)
+
+    pdf_options = {
+      encoding: 'UTF-8',
+      # Резервируем нижнее поле страницы под штампы подписи — это отдельная
+      # область wkhtmltopdf (footer), а не просто отступ, поэтому основной
+      # контент физически не может на нее наехать, сколько бы ни было строк.
+      margin: { top: 15, bottom: 50, left: 15, right: 15 },
+      footer: { content: footer_html, spacing: 0 }
+    }
     pdf_options[:exe_path] = wkhtmltopdf_exe_path if wkhtmltopdf_exe_path
     pdf_data = WickedPdf.new.pdf_from_string(html, **pdf_options)
 

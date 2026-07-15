@@ -9,23 +9,6 @@
   table.materials { width: 100%; border-collapse: collapse; margin: 20px 0; }
   table.materials th, table.materials td { border: 1px solid #333; padding: 6px 8px; text-align: left; font-size: 12px; }
   table.materials th { background: #f0f0f0; }
-  .sig-label { font-weight: bold; margin-bottom: 6px; }
-  .esign-box { border: 2px solid #2b57d6; border-radius: 4px; padding: 12px 14px; color: #2b57d6; }
-  .esign-box p { margin: 3px 0; font-size: 12px; }
-
-  /* Штампы подписей закреплены внизу страницы, 2 см от края.
-     position: fixed в wkhtmltopdf позиционируется относительно страницы,
-     а не относительно потока документа. */
-  table.esign-table {
-    position: fixed;
-    bottom: 2cm;
-    left: 0;
-    right: 0;
-    width: 100%;
-    border-collapse: collapse;
-  }
-  table.esign-table td { vertical-align: top; width: 50%; padding: 0 10px 0 0; }
-  table.esign-table td:last-child { padding-right: 0; }
 </style>
 </head>
 <body>
@@ -59,31 +42,6 @@
         </tr>
       <% end %>
     </tbody>
-  </table>
-
-  <table class="esign-table">
-    <tr>
-      <td>
-        <div class="sig-label">Принял</div>
-        <div class="esign-box">
-          <p>Документ подписан простой электронной подписью</p>
-          <p>Информация о владельце:</p>
-          <p>ФИО: <%= accepted_by&.name %></p>
-          <p>Логин: <%= accepted_by&.login %></p>
-          <p>Дата подписания: <%= accepted_at ? format_time(accepted_at) : '-' %></p>
-        </div>
-      </td>
-      <td>
-        <div class="sig-label">Выдал</div>
-        <div class="esign-box">
-          <p>Документ подписан простой электронной подписью</p>
-          <p>Информация о владельце:</p>
-          <p>ФИО: <%= issued_by&.name %></p>
-          <p>Логин: <%= issued_by&.login %></p>
-          <p>Дата подписания: <%= issued_at ? format_time(issued_at) : '-' %></p>
-        </div>
-      </td>
-    </tr>
   </table>
 </body>
 </html>
