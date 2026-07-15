@@ -41,7 +41,8 @@ class ImportController < ApplicationController
         existing: preview_result[:existing],
         new: preview_result[:new],
         skipped: result[:skipped],
-        skipped_details: result[:skipped_details]
+        skipped_details: result[:skipped_details],
+        merged: result[:merged]
       }
     else
       render json: { success: false, errors: @import.errors.full_messages }

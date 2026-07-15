@@ -16,7 +16,8 @@ class ImportForm
     errors = []
     skipped = 0
     skipped_details = []
-    seen_hashes = {}
+    merged = 0
+    index_by_hash = {}
     
     begin
       workbook = Roo::Excelx.new(file_to_read)
@@ -96,29 +97,29 @@ class ImportForm
         
         hash_key = MaterialStock.build_hash_key(material_type, brand, model)
 
-        if seen_hashes[hash_key]
-          skipped += 1
-          skipped_details << {
-            row_number: index + 1,
-            material_type: material_type,
-            model: model,
-            brand: brand,
-            quantity: quantity,
-            reasons: ["дубликат в файле (строка #{seen_hashes[hash_key]})"],
-            raw_data: row.compact.join(' | ')
-          }
+        # Один и тот же материал в файле часто встречается несколько раз —
+        # это отдельные партии прихода одного и того же товара (разные даты,
+        # разный "Код партии"), а не ошибочные дубли. Плагин хранит только
+        # суммарный остаток по материалу, поэтому такие строки складываются,
+        # а не отбрасываются — иначе часть количества молча терялась бы.
+        if index_by_hash.key?(hash_key)
+          existing_item = data[index_by_hash[hash_key]]
+          existing_item[:quantity] += quantity
+          existing_item[:merged_rows] << (index + 1)
+          merged += 1
           next
         end
-        seen_hashes[hash_key] = index + 1
 
-        # Все ок, добавляем
+        index_by_hash[hash_key] = data.size
+
         data << {
           material_type: material_type[0..499],
           brand: brand[0..499],
           model: model[0..499],
           quantity: quantity,
           hash_key: hash_key,
-          row_number: index + 1
+          row_number: index + 1,
+          merged_rows: []
         }
       end
       
@@ -126,7 +127,7 @@ class ImportForm
       errors << "Ошибка при чтении файла: #{e.message}"
     end
     
-    { data: data, errors: errors, skipped: skipped, skipped_details: skipped_details }
+    { data: data, errors: errors, skipped: skipped, skipped_details: skipped_details, merged: merged }
   end
   
   def preview_from_data(data)

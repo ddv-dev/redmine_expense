@@ -137,7 +137,11 @@ document.addEventListener('DOMContentLoaded', function() {
       currentSkipped = data.skipped_details || [];
       
       const totalInFile = data.total + (data.skipped || 0);
-      showStatus('success', `✅ Файл загружен. Найдено ${data.total} позиций. Пропущено: ${data.skipped || 0}`);
+      let statusMsg = `✅ Файл загружен. Найдено ${data.total} позиций. Пропущено: ${data.skipped || 0}`;
+      if (data.merged > 0) {
+        statusMsg += `. Объединено повторных партий: ${data.merged} (их количество суммировано с основной позицией)`;
+      }
+      showStatus('success', statusMsg);
       showPreview(data);
       showReport(data);
     })
@@ -157,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <span class="import-stat"><strong>${data.existing}</strong> <span class="import-stat-label">Существует в БД</span></span>
         <span class="import-stat"><strong>${data.new}</strong> <span class="import-stat-label">Новых позиций</span></span>
         <span class="import-stat"><strong>${data.mismatches.length}</strong> <span class="import-stat-label">Расхождений по количеству</span></span>
+        <span class="import-stat" style="background: #d1ecf1;"><strong>${data.merged || 0}</strong> <span class="import-stat-label">Объединено партий</span></span>
         <span class="import-stat" style="background: #f8d7da;"><strong>${data.skipped || 0}</strong> <span class="import-stat-label">Пропущено</span></span>
       </div>
     `;
