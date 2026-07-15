@@ -58,15 +58,22 @@ class ExpenseHistory < ActiveRecord::Base
   end
 
   # wicked_pdf по умолчанию ищет бинарник по фиксированному пути
-  # /usr/local/bin/wkhtmltopdf. Гем wkhtmltopdf-binary кладет реальный
-  # бинарник внутрь своей директории в bundle-пути, поэтому находим его
-  # там явно (либо берем то, что есть в PATH, если гема нет).
+  # /usr/local/bin/wkhtmltopdf. Порядок поиска:
+  # 1. Явно заданный путь через ENV['WKHTMLTOPDF_PATH'] или
+  #    Setting.plugin_redmine_expense['wkhtmltopdf_path'] — на случай, если
+  #    гем wkhtmltopdf-binary не поддерживает текущую ОС (его "бинарник" —
+  #    это Ruby-скрипт, который сам проверяет версию ОС и отказывается
+  #    запускаться, если под нее нет собранного пакета) и нужно указать
+  #    системно установленный wkhtmltopdf вручную.
+  # 2. Бинарник внутри самого гема wkhtmltopdf-binary.
+  # 3. Что найдется в PATH.
   def self.wkhtmltopdf_exe_path
     return @wkhtmltopdf_exe_path if defined?(@wkhtmltopdf_exe_path)
 
-    path = nil
+    path = ENV['WKHTMLTOPDF_PATH'].presence
+    path ||= Setting.plugin_redmine_expense['wkhtmltopdf_path'].presence
 
-    if (spec = Gem.loaded_specs['wkhtmltopdf-binary'])
+    if path.blank? && (spec = Gem.loaded_specs['wkhtmltopdf-binary'])
       path = Dir.glob(File.join(spec.gem_dir, '**', 'wkhtmltopdf')).find do |f|
         File.file?(f) && File.executable?(f)
       end
@@ -78,7 +85,8 @@ class ExpenseHistory < ActiveRecord::Base
     end
 
     if path.blank?
-      Rails.logger.error '[redmine_expense] Бинарник wkhtmltopdf не найден ни в геме wkhtmltopdf-binary, ни в PATH'
+      Rails.logger.error '[redmine_expense] Бинарник wkhtmltopdf не найден. Установите системный пакет (apt install wkhtmltopdf) ' \
+                          'или укажите путь явно через переменную окружения WKHTMLTOPDF_PATH.'
     end
 
     @wkhtmltopdf_exe_path = path
