@@ -1,9 +1,12 @@
 class ExpenseController < ApplicationController
   include ExpenseAuthorization
 
+  before_action :require_expense_contributor, only: [:materials, :brands, :models, :issue_materials, :stock_quantity, :save]
   before_action :find_issue, only: [:issue_materials, :stock_quantity, :save]
 
   def index
+    return unless require_expense_manager
+
     @total_materials = MaterialStock.count
     @pending_expenses = IntermediateExpense.pending.count
     @total_expenses = ExpenseHistory.count
@@ -142,7 +145,7 @@ class ExpenseController < ApplicationController
   end
 
   def clear_stock
-    return unless require_expense_permission(:manage_expense_stock)
+    return unless require_expense_manager
 
     if request.post?
       ActiveRecord::Base.transaction do
@@ -166,7 +169,7 @@ class ExpenseController < ApplicationController
   # история удаляется, а файлы актов на диске остаются). Файлы, на которые
   # всё ещё ссылается действующая запись, никогда не трогаются.
   def clean_pdfs
-    return unless require_expense_permission(:manage_expense_stock)
+    return unless require_expense_manager
 
     @orphaned_files = orphaned_pdf_files
     @orphaned_size = @orphaned_files.sum { |f| File.size(f) rescue 0 }

@@ -4,7 +4,7 @@ require "json"
 class ImportController < ApplicationController
   include ExpenseAuthorization
 
-  before_action { require_expense_permission(:manage_expense_stock) }
+  before_action :require_expense_manager
 
   def new
     @import = ImportForm.new

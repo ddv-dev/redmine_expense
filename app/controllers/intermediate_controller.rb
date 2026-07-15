@@ -1,8 +1,7 @@
 class IntermediateController < ApplicationController
   include ExpenseAuthorization
 
-  before_action(only: [:index]) { require_expense_permission(:view_intermediate_expense) }
-  before_action(only: [:approve, :reject]) { require_expense_permission(:approve_expense) }
+  before_action :require_expense_manager
 
   def index
     scope = IntermediateExpense.pending.includes(:material_stock, :user, :author).order(created_at: :desc)

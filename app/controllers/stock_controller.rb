@@ -3,8 +3,7 @@ require 'caxlsx'
 class StockController < ApplicationController
   include ExpenseAuthorization
 
-  before_action(only: [:index]) { require_expense_permission(:view_expense_stock) }
-  before_action(only: [:edit, :update, :export]) { require_expense_permission(:manage_expense_stock) }
+  before_action :require_expense_manager
   before_action :find_material, only: [:edit, :update]
 
   def index

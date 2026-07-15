@@ -17,7 +17,7 @@
   </div>
 </div>
 
-<% if expense_authorized?(:manage_expense_stock) %>
+<% if expense_manager? %>
   <div style="margin-bottom: 15px;">
     <%= link_to 'Экспорт в Excel', export_stock_path, class: 'btn btn-primary' %>
   </div>
@@ -31,7 +31,7 @@
       <th>Модификация</th>
       <th>Количество</th>
       <th>Описание</th>
-      <% if expense_authorized?(:manage_expense_stock) %>
+      <% if expense_manager? %>
         <th>Действия</th>
       <% end %>
     </tr>
@@ -46,7 +46,7 @@
           <%= material.quantity %>
         </td>
         <td><%= material.description %></td>
-        <% if expense_authorized?(:manage_expense_stock) %>
+        <% if expense_manager? %>
           <td>
             <a href="#" class="edit-material-link" data-id="<%= material.id %>" title="Редактировать">Изменить</a>
           </td>

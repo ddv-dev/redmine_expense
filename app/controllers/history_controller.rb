@@ -1,7 +1,7 @@
 class HistoryController < ApplicationController
   include ExpenseAuthorization
 
-  before_action { require_expense_permission(:view_expense_history) }
+  before_action :require_expense_manager
 
   def index
     scope = ExpenseHistory.includes(:material_stock, :user, :closer).order(closed_at: :desc)

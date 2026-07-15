@@ -14,39 +14,17 @@ Redmine::Plugin.register :redmine_expense do
     'status_in_progress' => [],
     'status_resolved' => [],
     'status_closed' => [],
-    'expense_role_id' => nil
+    'expense_manager_ids' => [],
+    'expense_contributor_ids' => []
   }, partial: 'settings/expense_settings'
-
-  project_module :expense do
-    permission :view_expense_history, {
-      history: [:index, :show, :download_pdf]
-    }, require: :loggedin
-
-    permission :view_expense_stock, {
-      stock: [:index]
-    }, require: :loggedin
-
-    permission :manage_expense_stock, {
-      stock: [:edit, :update, :export],
-      import: [:new, :preview, :confirm],
-      expense: [:clear_stock, :clean_pdfs]
-    }, require: :loggedin
-
-    permission :view_intermediate_expense, {
-      intermediate: [:index]
-    }, require: :loggedin
-
-    permission :approve_expense, {
-      intermediate: [:approve, :reject]
-    }, require: :loggedin
-  end
 
   menu :top_menu, :expense, {
     controller: 'expense', action: 'index'
-  }, caption: 'Расход', if: Proc.new { User.current.logged? }
+  }, caption: 'Расход', if: Proc.new { User.current.logged? && RedmineExpense::Access.manager?(User.current) }
 end
 
 require File.expand_path('issue_edit_hook', __dir__)
+require_relative 'lib/redmine_expense/access'
 
 # Хук для подключения JavaScript и CSS.
 # Redmine::Hook::ViewListener регистрирует свои подклассы автоматически при

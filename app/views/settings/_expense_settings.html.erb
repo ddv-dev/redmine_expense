@@ -68,6 +68,29 @@
     height: 38px;
     box-sizing: border-box;
   }
+  .user-filter {
+    padding: 8px 10px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    font-size: 13px;
+    height: 34px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+  }
+  .user-grid {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: white;
+    padding: 5px 0;
+  }
+  .user-grid .checkbox-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
   .submit-wrapper {
     margin-top: 20px;
     text-align: center;
@@ -179,20 +202,40 @@
     </div>
   </div>
 
-  <!-- Роль для доступа -->
+  <!-- Доступ к вкладке "Расход" -->
+  <% expense_manager_ids = @settings['expense_manager_ids'].to_a.map(&:to_s) %>
   <div class="settings-section">
-    <span class="section-title">Роль для доступа</span>
-    <div style="padding: 10px 0;">
-      <select name="settings[expense_role_id]" class="role-select">
-        <option value="">-- Выберите роль --</option>
-        <% Role.all.each do |role| %>
-          <option value="<%= role.id %>" <%= 'selected' if @settings['expense_role_id'].to_s == role.id.to_s %>>
-            <%= role.name %>
-          </option>
+    <span class="section-title">Доступ к вкладке "Расход"</span>
+    <input type="text" class="user-filter" data-filter-target="expense-manager-grid" placeholder="Поиск пользователя...">
+    <div class="user-grid" id="expense-manager-grid">
+      <div class="checkbox-grid">
+        <% User.active.sorted.each do |user| %>
+          <label data-user-name="<%= user.name.downcase %>">
+            <%= check_box_tag 'settings[expense_manager_ids][]', user.id, expense_manager_ids.include?(user.id.to_s) %>
+            <%= user.name %>
+          </label>
         <% end %>
-      </select>
+      </div>
     </div>
-    <span class="settings-hint">Выберите роль, которая будет иметь доступ к плагину</span>
+    <span class="settings-hint">Эти пользователи получат полный доступ к вкладке "Расход": история, склад, промежуточная таблица, импорт, подтверждение и отклонение списаний</span>
+  </div>
+
+  <!-- Доступ к добавлению материалов в задачу -->
+  <% expense_contributor_ids = @settings['expense_contributor_ids'].to_a.map(&:to_s) %>
+  <div class="settings-section">
+    <span class="section-title">Доступ к добавлению материалов в задачу</span>
+    <input type="text" class="user-filter" data-filter-target="expense-contributor-grid" placeholder="Поиск пользователя...">
+    <div class="user-grid" id="expense-contributor-grid">
+      <div class="checkbox-grid">
+        <% User.active.sorted.each do |user| %>
+          <label data-user-name="<%= user.name.downcase %>">
+            <%= check_box_tag 'settings[expense_contributor_ids][]', user.id, expense_contributor_ids.include?(user.id.to_s) %>
+            <%= user.name %>
+          </label>
+        <% end %>
+      </div>
+    </div>
+    <span class="settings-hint">Эти пользователи смогут добавлять расходные материалы в карточке задачи. Пользователи с доступом к вкладке "Расход" (выше) могут это делать в любом случае</span>
   </div>
 
   <div class="submit-wrapper">
@@ -200,3 +243,17 @@
   </div>
 
 <% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.user-filter').forEach(function(input) {
+    input.addEventListener('input', function() {
+      var query = this.value.toLowerCase();
+      var grid = document.getElementById(this.dataset.filterTarget);
+      grid.querySelectorAll('label[data-user-name]').forEach(function(label) {
+        label.style.display = label.dataset.userName.indexOf(query) === -1 ? 'none' : 'flex';
+      });
+    });
+  });
+});
+</script>

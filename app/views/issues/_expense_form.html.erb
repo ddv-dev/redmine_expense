@@ -8,7 +8,8 @@
   expense_project_allowed = expense_project_ids.empty? || expense_project_ids.include?(issue.project_id.to_s)
   expense_tracker_allowed = expense_tracker_ids.empty? || expense_tracker_ids.include?(issue.tracker_id.to_s)
   expense_enabled = issue.persisted? && expense_project_allowed && expense_tracker_allowed &&
-                    expense_status_in_progress.any? && expense_status_resolved.any?
+                    expense_status_in_progress.any? && expense_status_resolved.any? &&
+                    RedmineExpense::Access.contributor?(User.current)
 %>
 <% if expense_enabled %>
   <div id="expense-fields-root" data-issue-id="<%= issue.id %>"></div>

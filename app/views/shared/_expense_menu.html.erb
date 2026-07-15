@@ -4,32 +4,32 @@
         class: 'btn btn-primary',
         style: "padding: 8px 20px; background: #{current_page?(expense_index_path) ? '#3e5b76' : '#6c757d'}; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;" %>
 
-    <% if expense_authorized?(:view_expense_history) %>
+    <% if expense_manager? %>
       <%= link_to 'История списаний', history_index_path,
           class: 'btn btn-primary',
           style: "padding: 8px 20px; background: #{current_page?(history_index_path) ? '#3e5b76' : '#6c757d'}; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;" %>
     <% end %>
 
-    <% if expense_authorized?(:view_expense_stock) %>
+    <% if expense_manager? %>
       <%= link_to 'Остатки по складу', stock_index_path,
           class: 'btn btn-primary',
           style: "padding: 8px 20px; background: #{current_page?(stock_index_path) ? '#3e5b76' : '#6c757d'}; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;" %>
     <% end %>
 
-    <% if expense_authorized?(:view_intermediate_expense) %>
+    <% if expense_manager? %>
       <%= link_to 'Ожидают подтверждения', intermediate_index_path,
           class: 'btn btn-primary',
           style: "padding: 8px 20px; background: #{current_page?(intermediate_index_path) ? '#3e5b76' : '#6c757d'}; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;" %>
     <% end %>
 
-    <% if expense_authorized?(:manage_expense_stock) %>
+    <% if expense_manager? %>
       <%= link_to 'Импорт', new_import_path,
           class: 'btn btn-primary',
           style: "padding: 8px 20px; background: #{current_page?(new_import_path) ? '#3e5b76' : '#6c757d'}; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;" %>
     <% end %>
   </div>
 
-  <% if expense_authorized?(:manage_expense_stock) %>
+  <% if expense_manager? %>
     <div style="margin-left: auto; display: flex; gap: 10px;">
       <%= link_to 'Очистить старые PDF', clean_pdfs_expense_path,
           class: 'btn btn-secondary',
