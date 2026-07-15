@@ -40,7 +40,9 @@ class ExpenseHistory < ActiveRecord::Base
       }
     )
 
-    pdf_data = WickedPdf.new.pdf_from_string(html, encoding: 'UTF-8')
+    pdf_options = { encoding: 'UTF-8' }
+    pdf_options[:exe_path] = wkhtmltopdf_exe_path if wkhtmltopdf_exe_path
+    pdf_data = WickedPdf.new.pdf_from_string(html, **pdf_options)
 
     dir = Rails.root.join('files', 'redmine_expense')
     FileUtils.mkdir_p(dir)
@@ -53,5 +55,32 @@ class ExpenseHistory < ActiveRecord::Base
   rescue => e
     Rails.logger.error "[redmine_expense] Ошибка генерации PDF для задачи ##{issue_id}: #{e.message}"
     nil
+  end
+
+  # wicked_pdf по умолчанию ищет бинарник по фиксированному пути
+  # /usr/local/bin/wkhtmltopdf. Гем wkhtmltopdf-binary кладет реальный
+  # бинарник внутрь своей директории в bundle-пути, поэтому находим его
+  # там явно (либо берем то, что есть в PATH, если гема нет).
+  def self.wkhtmltopdf_exe_path
+    return @wkhtmltopdf_exe_path if defined?(@wkhtmltopdf_exe_path)
+
+    path = nil
+
+    if (spec = Gem.loaded_specs['wkhtmltopdf-binary'])
+      path = Dir.glob(File.join(spec.gem_dir, '**', 'wkhtmltopdf')).find do |f|
+        File.file?(f) && File.executable?(f)
+      end
+    end
+
+    if path.blank?
+      found = `which wkhtmltopdf 2>/dev/null`.strip
+      path = found if found.present?
+    end
+
+    if path.blank?
+      Rails.logger.error '[redmine_expense] Бинарник wkhtmltopdf не найден ни в геме wkhtmltopdf-binary, ни в PATH'
+    end
+
+    @wkhtmltopdf_exe_path = path
   end
 end
