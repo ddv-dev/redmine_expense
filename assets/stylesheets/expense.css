@@ -34,29 +34,32 @@
 
 .expense-material-row select,
 .expense-material-row input[type="text"] {
-  padding: 6px;
+  padding: 4px 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  height: 32px;
+  line-height: 20px;
+  font-size: 13px;
+  box-sizing: border-box;
+  vertical-align: middle;
 }
 
-.expense-type-select,
 .expense-model-select {
   flex: 1 1 140px;
   min-width: 120px;
 }
 
-.expense-brand-wrap {
+.expense-autocomplete-wrap {
   position: relative;
   flex: 1 1 200px;
   min-width: 160px;
 }
 
-.expense-brand-input {
+.expense-autocomplete-wrap input[type="text"] {
   width: 100%;
-  box-sizing: border-box;
 }
 
-.expense-brand-suggestions {
+.expense-suggestions {
   display: none;
   position: absolute;
   top: 100%;
@@ -74,22 +77,23 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-.expense-brand-suggestions li {
+.expense-suggestions li {
   padding: 6px 10px;
   font-size: 13px;
+  line-height: 1.4;
   cursor: pointer;
 }
 
-.expense-brand-suggestions li:hover {
+.expense-suggestions li:hover {
   background: #eef4fa;
 }
 
-.expense-brand-suggestions li.expense-brand-empty {
+.expense-suggestions li.expense-suggestion-empty {
   color: #999;
   cursor: default;
 }
 
-.expense-brand-suggestions li.expense-brand-empty:hover {
+.expense-suggestions li.expense-suggestion-empty:hover {
   background: none;
 }
 

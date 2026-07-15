@@ -7,6 +7,8 @@ $(document).ready(function() {
   var statusResolved = (window.expenseSettings && window.expenseSettings.statusResolved) || [];
   var allStatuses = statusInProgress.concat(statusResolved).map(String);
 
+  var typesCache = null; // общий для всех строк список типов материала
+
   initExpenseFields(issueId);
 
   function initExpenseFields(issueId) {
@@ -54,11 +56,15 @@ $(document).ready(function() {
     var quantity = material ? material.quantity : '';
     return $(
       '<div class="expense-material-row" data-material-id="' + id + '">' +
-        '<select name="expense[material_type][]" class="expense-type-select"><option value="">Выберите тип</option></select>' +
-        '<div class="expense-brand-wrap">' +
+        '<div class="expense-autocomplete-wrap">' +
+          '<input type="text" class="expense-type-input" placeholder="Начните вводить тип материала" autocomplete="off">' +
+          '<input type="hidden" name="expense[material_type][]" class="expense-type-value">' +
+          '<ul class="expense-type-suggestions expense-suggestions"></ul>' +
+        '</div>' +
+        '<div class="expense-autocomplete-wrap">' +
           '<input type="text" class="expense-brand-input" placeholder="Начните вводить наименование" autocomplete="off" disabled>' +
           '<input type="hidden" name="expense[brand][]" class="expense-brand-value">' +
-          '<ul class="expense-brand-suggestions"></ul>' +
+          '<ul class="expense-brand-suggestions expense-suggestions"></ul>' +
         '</div>' +
         '<select name="expense[model][]" class="expense-model-select" disabled><option value="">Выберите модель</option></select>' +
         '<input type="text" name="expense[quantity][]" value="' + (quantity || '') + '" placeholder="Кол-во" class="expense-quantity-input">' +
@@ -93,33 +99,33 @@ $(document).ready(function() {
       container.append(buildRow(material));
     });
 
-    loadAllTypes(function() {
+    ensureTypesLoaded(function() {
       $('.expense-material-row').each(function(index) {
         var row = $(this);
         var material = materials[index];
         if (material) {
-          row.find('.expense-type-select').val(material.material_type);
+          row.find('.expense-type-input').val(material.material_type);
+          row.find('.expense-type-value').val(material.material_type);
           loadBrandsForRow(row, material, issueId);
         }
       });
     });
   }
 
-  function loadAllTypes(callback) {
+  // Загружает список типов материала один раз и переиспользует его для всех
+  // строк и подсказок — повторных запросов на сервер при вводе не требуется.
+  function ensureTypesLoaded(callback) {
+    if (typesCache) {
+      if (callback) callback();
+      return;
+    }
+
     $.ajax({
       url: '/expense/materials',
       method: 'GET',
       dataType: 'json',
       success: function(data) {
-        $('.expense-type-select').each(function() {
-          var select = $(this);
-          var current = select.val();
-          select.find('option:not(:first)').remove();
-          $.each(data, function(i, type) {
-            select.append('<option value="' + type.id + '">' + type.name + '</option>');
-          });
-          if (current) select.val(current);
-        });
+        typesCache = data || [];
         if (callback) callback();
       }
     });
@@ -131,12 +137,12 @@ $(document).ready(function() {
   function loadBrandsForRow(row, material, issueId) {
     var brandInput = row.find('.expense-brand-input');
     var brandValue = row.find('.expense-brand-value');
-    var materialType = row.find('.expense-type-select').val();
+    var materialType = row.find('.expense-type-value').val();
 
     row.data('brandOptions', []);
     brandInput.prop('disabled', true).val('');
     brandValue.val('');
-    hideSuggestions(row);
+    hideSuggestions(row, 'brand');
     resetModelSelect(row);
 
     if (!materialType) return;
@@ -164,13 +170,18 @@ $(document).ready(function() {
     row.find('.stock-info').text('Доступно: ?');
   }
 
-  function hideSuggestions(row) {
-    row.find('.expense-brand-suggestions').empty().hide();
+  function resetBrand(row) {
+    row.find('.expense-brand-input').val('').prop('disabled', true);
+    row.find('.expense-brand-value').val('');
+    row.data('brandOptions', []);
+    hideSuggestions(row, 'brand');
   }
 
-  function renderSuggestions(row, query) {
-    var list = row.data('brandOptions') || [];
-    var suggestionsEl = row.find('.expense-brand-suggestions');
+  function hideSuggestions(row, field) {
+    row.find('.expense-' + field + '-suggestions').empty().hide();
+  }
+
+  function renderSuggestionList(suggestionsEl, list, query) {
     suggestionsEl.empty();
 
     var q = query.trim().toLowerCase();
@@ -179,7 +190,7 @@ $(document).ready(function() {
     });
 
     if (matches.length === 0) {
-      suggestionsEl.append('<li class="expense-brand-empty">Ничего не найдено</li>');
+      suggestionsEl.append('<li class="expense-suggestion-empty">Ничего не найдено</li>');
       suggestionsEl.show();
       return;
     }
@@ -191,17 +202,34 @@ $(document).ready(function() {
     suggestionsEl.show();
   }
 
+  function renderTypeSuggestions(row, query) {
+    renderSuggestionList(row.find('.expense-type-suggestions'), typesCache || [], query);
+  }
+
+  function renderBrandSuggestions(row, query) {
+    renderSuggestionList(row.find('.expense-brand-suggestions'), row.data('brandOptions') || [], query);
+  }
+
+  function selectType(row, value, issueId) {
+    row.find('.expense-type-input').val(value);
+    row.find('.expense-type-value').val(value);
+    hideSuggestions(row, 'type');
+    resetBrand(row);
+    resetModelSelect(row);
+    loadBrandsForRow(row, null, issueId);
+  }
+
   function selectBrand(row, value, issueId) {
     row.find('.expense-brand-input').val(value);
     row.find('.expense-brand-value').val(value);
-    hideSuggestions(row);
+    hideSuggestions(row, 'brand');
     resetModelSelect(row);
     loadModelsForRow(row, null, issueId);
   }
 
   function loadModelsForRow(row, material, issueId) {
     var modelSelect = row.find('.expense-model-select');
-    var materialType = row.find('.expense-type-select').val();
+    var materialType = row.find('.expense-type-value').val();
     var brand = row.find('.expense-brand-value').val();
     if (!materialType || !brand) return;
 
@@ -226,7 +254,7 @@ $(document).ready(function() {
   }
 
   function checkStock(row, issueId) {
-    var materialType = row.find('.expense-type-select').val();
+    var materialType = row.find('.expense-type-value').val();
     var brand = row.find('.expense-brand-value').val();
     var model = row.find('.expense-model-select').val();
     var stockInfo = row.find('.stock-info');
@@ -269,10 +297,36 @@ $(document).ready(function() {
     });
   }
 
-  $(document).on('change', '.expense-type-select', function() {
+  // --- Тип материала: живой поиск по общему для всех строк списку ---
+
+  $(document).on('input', '.expense-type-input', function() {
     var row = $(this).closest('.expense-material-row');
-    loadBrandsForRow(row, null, issueId);
+    row.find('.expense-type-value').val('');
+    resetBrand(row);
+    resetModelSelect(row);
+    renderTypeSuggestions(row, $(this).val());
   });
+
+  $(document).on('focus', '.expense-type-input', function() {
+    var input = $(this);
+    var row = input.closest('.expense-material-row');
+    ensureTypesLoaded(function() {
+      renderTypeSuggestions(row, input.val());
+    });
+  });
+
+  $(document).on('mousedown', '.expense-type-suggestions li[data-value]', function(e) {
+    e.preventDefault();
+    var row = $(this).closest('.expense-material-row');
+    selectType(row, $(this).attr('data-value'), issueId);
+  });
+
+  $(document).on('blur', '.expense-type-input', function() {
+    var row = $(this).closest('.expense-material-row');
+    setTimeout(function() { hideSuggestions(row, 'type'); }, 150);
+  });
+
+  // --- Бренд/наименование: живой поиск по списку, загруженному для типа ---
 
   // Живой поиск: фильтруем закэшированный список брендов/наименований
   // при каждом вводе символа. Любое ручное изменение текста сбрасывает
@@ -282,13 +336,13 @@ $(document).ready(function() {
     var row = $(this).closest('.expense-material-row');
     row.find('.expense-brand-value').val('');
     resetModelSelect(row);
-    renderSuggestions(row, $(this).val());
+    renderBrandSuggestions(row, $(this).val());
   });
 
   $(document).on('focus', '.expense-brand-input', function() {
     var row = $(this).closest('.expense-material-row');
     if (!$(this).prop('disabled')) {
-      renderSuggestions(row, $(this).val());
+      renderBrandSuggestions(row, $(this).val());
     }
   });
 
@@ -302,7 +356,7 @@ $(document).ready(function() {
 
   $(document).on('blur', '.expense-brand-input', function() {
     var row = $(this).closest('.expense-material-row');
-    setTimeout(function() { hideSuggestions(row); }, 150);
+    setTimeout(function() { hideSuggestions(row, 'brand'); }, 150);
   });
 
   $(document).on('change', '.expense-model-select', function() {
@@ -318,7 +372,7 @@ $(document).ready(function() {
     var container = $('#expense-materials-container');
     var row = buildRow(null);
     container.append(row);
-    loadAllTypes();
+    ensureTypesLoaded();
   });
 
   $(document).on('click', '.remove-expense-material', function(e) {
@@ -349,14 +403,21 @@ $(document).ready(function() {
 
     $('.expense-material-row').each(function() {
       var row = $(this);
-      var materialType = row.find('.expense-type-select').val();
+      var typeTyped = row.find('.expense-type-input').val();
+      var materialType = row.find('.expense-type-value').val();
       var brandTyped = row.find('.expense-brand-input').val();
       var brand = row.find('.expense-brand-value').val();
       var model = row.find('.expense-model-select').val();
       var quantity = row.find('.expense-quantity-input').val();
       var id = row.find('input[name="expense[id][]"]').val();
 
-      if (!materialType && !brandTyped && !model && !quantity) return; // пустая строка
+      if (!typeTyped && !brandTyped && !model && !quantity) return; // пустая строка
+
+      if (typeTyped && !materialType) {
+        hasErrors = true;
+        alert('Выберите тип материала из выпадающего списка подсказок, а не просто впишите текст.');
+        return false;
+      }
 
       if (brandTyped && !brand) {
         hasErrors = true;
