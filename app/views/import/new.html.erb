@@ -13,11 +13,11 @@
       <p><strong>Ожидаемая структура:</strong></p>
       <ul>
         <li><strong>Колонка A:</strong> Количество</li>
-        <li><strong>Колонка B:</strong> Номенклатура (тип материала)</li>
+        <li><strong>Колонка B:</strong> Наименование номенклатуры</li>
         <li><strong>Колонка E:</strong> Наименование модификации (модель)</li>
-        <li><strong>Колонка G:</strong> Наименование поставщика (бренд)</li>
+        <li><strong>Колонка G:</strong> Наименование поставщика</li>
       </ul>
-      <p><em>Первичный ключ: Номенклатура + Наименование модификации + Бренд</em></p>
+      <p><em>Первичный ключ: Наименование номенклатуры + Наименование модификации + Поставщик</em></p>
       
       <form id="import-form-ajax" enctype="multipart/form-data">
         <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
@@ -172,8 +172,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <thead>
           <tr>
             <th>Строка</th>
-            <th>Тип материала</th>
-            <th>Бренд</th>
+            <th>Наименование номенклатуры</th>
+            <th>Поставщик</th>
             <th>Модель</th>
             <th>Количество</th>
             <th>Текущее кол-во</th>
@@ -251,8 +251,8 @@ document.addEventListener('DOMContentLoaded', function() {
           <thead>
             <tr>
               <th>Строка</th>
-              <th>Номенклатура</th>
-              <th>Бренд</th>
+              <th>Наименование номенклатуры</th>
+              <th>Поставщик</th>
               <th>Модель</th>
               <th>Количество</th>
               <th>Причина</th>

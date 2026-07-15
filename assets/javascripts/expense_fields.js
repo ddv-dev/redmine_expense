@@ -70,12 +70,12 @@ $(document).ready(function() {
     return $(
       '<div class="expense-material-row" data-material-id="' + id + '">' +
         '<div class="expense-autocomplete-wrap">' +
-          '<input type="text" class="expense-type-input" placeholder="Начните вводить тип материала" autocomplete="off">' +
+          '<input type="text" class="expense-type-input" placeholder="Начните вводить наименование номенклатуры" autocomplete="off">' +
           '<input type="hidden" name="expense[material_type][]" class="expense-type-value">' +
           '<ul class="expense-type-suggestions expense-suggestions"></ul>' +
         '</div>' +
         '<div class="expense-autocomplete-wrap">' +
-          '<input type="text" class="expense-brand-input" placeholder="Начните вводить наименование" autocomplete="off" disabled>' +
+          '<input type="text" class="expense-brand-input" placeholder="Начните вводить поставщика" autocomplete="off" disabled>' +
           '<input type="hidden" name="expense[brand][]" class="expense-brand-value">' +
           '<ul class="expense-brand-suggestions expense-suggestions"></ul>' +
         '</div>' +
@@ -465,19 +465,19 @@ $(document).ready(function() {
 
       if (typeTyped && !materialType) {
         hasErrors = true;
-        alert('Выберите тип материала из выпадающего списка подсказок, а не просто впишите текст.');
+        alert('Выберите наименование номенклатуры из выпадающего списка подсказок, а не просто впишите текст.');
         return false;
       }
 
       if (brandTyped && !brand) {
         hasErrors = true;
-        alert('Выберите наименование/бренд из выпадающего списка подсказок, а не просто впишите текст.');
+        alert('Выберите поставщика из выпадающего списка подсказок, а не просто впишите текст.');
         return false;
       }
 
       if (!materialType || !brand || !model || !quantity) {
         hasErrors = true;
-        alert('Заполните тип, наименование, модель и количество материала во всех строках.');
+        alert('Заполните наименование номенклатуры, поставщика, модель и количество материала во всех строках.');
         return false;
       }
 

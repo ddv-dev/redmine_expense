@@ -137,28 +137,35 @@
   cursor: pointer;
 }
 
-/* Подстраховка на случай, если тема Redmine не стилизует .pagination сама:
-   без этого список постранички рвётся в вертикальный маркированный список. */
+/* Подстраховка на случай, если CSS темы Redmine стилизует .pagination
+   более специфичным селектором, чем этот (например #content .pagination):
+   без !important список постранички рвется в вертикальный маркированный
+   список, потому что более специфичное правило темы побеждает наше. */
+p.pagination,
 .pagination {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 15px 0;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+  margin: 15px 0 !important;
 }
 
+p.pagination ul,
 .pagination ul {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
+  display: inline-flex !important;
+  flex-wrap: wrap !important;
+  gap: 2px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
 }
 
+p.pagination li,
 .pagination li {
-  display: inline-block;
-  list-style: none;
-  padding: 0 2px;
+  display: inline-block !important;
+  list-style: none !important;
+  padding: 0 2px !important;
+  margin: 0 !important;
 }
 
 .pagination .per-page-links,

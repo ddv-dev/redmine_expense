@@ -43,7 +43,7 @@ class ImportForm
         end
         
         if brand.blank?
-          skip_reasons << "пустой бренд"
+          skip_reasons << "пустой поставщик"
         end
         
         if quantity.blank?

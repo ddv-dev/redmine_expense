@@ -10,10 +10,12 @@
   table.materials th, table.materials td { border: 1px solid #333; padding: 6px 8px; text-align: left; font-size: 12px; }
   table.materials th { background: #f0f0f0; }
   .signatures-title { font-weight: bold; margin: 20px 0 8px; }
-  table.signatures { width: 100%; border-collapse: collapse; }
-  table.signatures td { border: 1px solid #333; padding: 10px; vertical-align: top; width: 50%; font-size: 12px; }
-  table.signatures p { margin: 3px 0; }
+  table.esign-table { width: 100%; border-collapse: collapse; }
+  table.esign-table td { vertical-align: top; width: 50%; padding: 0 10px 0 0; }
+  table.esign-table td:last-child { padding-right: 0; }
   .sig-label { font-weight: bold; margin-bottom: 6px; }
+  .esign-box { border: 2px solid #2b57d6; border-radius: 4px; padding: 12px 14px; color: #2b57d6; }
+  .esign-box p { margin: 3px 0; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -29,8 +31,8 @@
   <table class="materials">
     <thead>
       <tr>
-        <th>Тип материала</th>
-        <th>Бренд</th>
+        <th>Наименование номенклатуры</th>
+        <th>Поставщик</th>
         <th>Модель</th>
         <th>Кол-во</th>
         <th>Комментарий</th>
@@ -50,19 +52,27 @@
   </table>
 
   <div class="signatures-title">Электронные подписи</div>
-  <table class="signatures">
+  <table class="esign-table">
     <tr>
       <td>
         <div class="sig-label">Принял (создал задачу)</div>
-        <p>ФИО: <%= accepted_by&.name %></p>
-        <p>Логин: <%= accepted_by&.login %></p>
-        <p>Дата/время: <%= accepted_at ? format_time(accepted_at) : '-' %></p>
+        <div class="esign-box">
+          <p>Документ подписан простой электронной подписью</p>
+          <p>Информация о владельце:</p>
+          <p>ФИО: <%= accepted_by&.name %></p>
+          <p>Логин: <%= accepted_by&.login %></p>
+          <p>Дата подписания: <%= accepted_at ? format_time(accepted_at) : '-' %></p>
+        </div>
       </td>
       <td>
         <div class="sig-label">Списал (добавил материалы)</div>
-        <p>ФИО: <%= issued_by&.name %></p>
-        <p>Логин: <%= issued_by&.login %></p>
-        <p>Дата/время: <%= issued_at ? format_time(issued_at) : '-' %></p>
+        <div class="esign-box">
+          <p>Документ подписан простой электронной подписью</p>
+          <p>Информация о владельце:</p>
+          <p>ФИО: <%= issued_by&.name %></p>
+          <p>Логин: <%= issued_by&.login %></p>
+          <p>Дата подписания: <%= issued_at ? format_time(issued_at) : '-' %></p>
+        </div>
       </td>
     </tr>
   </table>
