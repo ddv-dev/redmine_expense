@@ -22,9 +22,13 @@ class ExpenseController < ApplicationController
   end
 
   def models
+    # id — реальный первичный ключ MaterialStock, а не текст модели.
+    # Так дальнейшие запросы (остаток, сохранение) идут по ID, а не по
+    # тройному текстовому совпадению, которое ломается на "грязных" данных
+    # (лишние пробелы, обрезанные наименования и т.п.).
     models = MaterialStock.where(material_type: params[:material_type], brand: params[:brand])
-                           .distinct.order(:model).pluck(:model)
-    render json: models.map { |m| { id: m, name: m } }
+                           .order(:model)
+    render json: models.map { |m| { id: m.id, name: m.model } }
   end
 
   def issue_materials
@@ -33,6 +37,7 @@ class ExpenseController < ApplicationController
     result = materials.map do |m|
       {
         id: m.id,
+        material_stock_id: m.material_stock_id,
         material_type: m.material_stock.material_type,
         brand: m.material_stock.brand,
         model: m.material_stock.model,
@@ -44,13 +49,10 @@ class ExpenseController < ApplicationController
   end
 
   def stock_quantity
-    stock = MaterialStock.find_by(
-      material_type: params[:material_type],
-      brand: params[:brand],
-      model: params[:model]
-    )
+    stock = find_material_stock(params[:material_stock_id], params[:material_type], params[:brand], params[:model])
 
     unless stock
+      Rails.logger.warn "[redmine_expense] stock_quantity: материал не найден (material_stock_id=#{params[:material_stock_id].inspect}, material_type=#{params[:material_type].inspect}, brand=#{params[:brand].inspect}, model=#{params[:model].inspect})"
       render json: { quantity: 0, available: false, error: 'Материал не найден' }, status: :not_found
       return
     end
@@ -69,6 +71,7 @@ class ExpenseController < ApplicationController
 
   def save
     unless User.current.allowed_to?(:edit_issue, @issue.project)
+      Rails.logger.warn "[redmine_expense] save: доступ запрещен (user=#{User.current.id}/#{User.current.login}, issue=#{@issue.id}, project=#{@issue.project_id})"
       render json: { success: false, error: 'Доступ запрещен' }, status: :forbidden
       return
     end
@@ -88,6 +91,7 @@ class ExpenseController < ApplicationController
       model = material[:model] || material['model']
       quantity = material[:quantity] || material['quantity']
       mat_id = material[:id] || material['id']
+      mat_stock_id = material[:material_stock_id] || material['material_stock_id']
 
       next if mat_type.blank? || quantity.blank?
 
@@ -97,7 +101,7 @@ class ExpenseController < ApplicationController
         next
       end
 
-      stock = MaterialStock.find_by(material_type: mat_type, brand: brand, model: model)
+      stock = find_material_stock(mat_stock_id, mat_type, brand, model)
       unless stock
         errors << "Материал «#{mat_type} #{brand} #{model}» не найден в базе"
         next
@@ -163,6 +167,7 @@ class ExpenseController < ApplicationController
     @issue = Issue.find(params[:issue_id])
 
     unless User.current.allowed_to?(:view_issues, @issue.project)
+      Rails.logger.warn "[redmine_expense] find_issue: доступ запрещен (user=#{User.current.id}/#{User.current.login}, issue=#{@issue.id}, project=#{@issue.project_id})"
       render json: { success: false, error: 'Доступ запрещен' }, status: :forbidden
     end
   rescue ActiveRecord::RecordNotFound
@@ -178,5 +183,17 @@ class ExpenseController < ApplicationController
     else
       []
     end
+  end
+
+  # Ищет материал прежде всего по первичному ключу (надежно, не зависит от
+  # текста), и только если его не передали — по тройке текстовых полей
+  # (для обратной совместимости и запасного варианта).
+  def find_material_stock(material_stock_id, material_type, brand, model)
+    if material_stock_id.present?
+      stock = MaterialStock.find_by(id: material_stock_id)
+      return stock if stock
+    end
+
+    MaterialStock.find_by(material_type: material_type, brand: brand, model: model)
   end
 end

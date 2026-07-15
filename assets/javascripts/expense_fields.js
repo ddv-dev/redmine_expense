@@ -9,6 +9,16 @@ $(document).ready(function() {
 
   var typesCache = null; // общий для всех строк список типов материала
 
+  function log() {
+    if (window.console && console.log) {
+      var args = Array.prototype.slice.call(arguments);
+      args.unshift('[redmine_expense]');
+      console.log.apply(console, args);
+    }
+  }
+
+  log('init, issueId =', issueId, 'allStatuses =', allStatuses);
+
   initExpenseFields(issueId);
 
   function initExpenseFields(issueId) {
@@ -43,9 +53,11 @@ $(document).ready(function() {
       data: { issue_id: issueId },
       dataType: 'json',
       success: function(materials) {
+        log('issue_materials loaded:', materials);
         renderExpenseFields(materials || [], issueId);
       },
-      error: function() {
+      error: function(xhr) {
+        log('issue_materials FAILED, status =', xhr.status, xhr.responseText);
         renderExpenseFields([], issueId);
       }
     });
@@ -53,6 +65,7 @@ $(document).ready(function() {
 
   function buildRow(material) {
     var id = material ? material.id : '';
+    var materialStockId = material ? material.material_stock_id : '';
     var quantity = material ? material.quantity : '';
     return $(
       '<div class="expense-material-row" data-material-id="' + id + '">' +
@@ -70,6 +83,7 @@ $(document).ready(function() {
         '<input type="text" name="expense[quantity][]" value="' + (quantity || '') + '" placeholder="Кол-во" class="expense-quantity-input">' +
         '<span class="stock-info">Доступно: ?</span>' +
         '<a href="#" class="remove-expense-material" title="Удалить">&#10005;</a>' +
+        '<input type="hidden" name="expense[material_stock_id][]" class="expense-material-stock-id" value="' + (materialStockId || '') + '">' +
         (id ? '<input type="hidden" name="expense[id][]" value="' + id + '">' : '') +
       '</div>'
     );
@@ -126,7 +140,11 @@ $(document).ready(function() {
       dataType: 'json',
       success: function(data) {
         typesCache = data || [];
+        log('types loaded:', typesCache.length);
         if (callback) callback();
+      },
+      error: function(xhr) {
+        log('materials (types) FAILED, status =', xhr.status, xhr.responseText);
       }
     });
   }
@@ -161,12 +179,16 @@ $(document).ready(function() {
           brandValue.val(material.brand);
           loadModelsForRow(row, material, issueId);
         }
+      },
+      error: function(xhr) {
+        log('brands FAILED, status =', xhr.status, xhr.responseText);
       }
     });
   }
 
   function resetModelSelect(row) {
     row.find('.expense-model-select').prop('disabled', true).val('').find('option:not(:first)').remove();
+    row.find('.expense-material-stock-id').val('');
     row.find('.stock-info').text('Доступно: ?');
   }
 
@@ -227,6 +249,16 @@ $(document).ready(function() {
     loadModelsForRow(row, null, issueId);
   }
 
+  // Переносит реальный первичный ключ MaterialStock (data-stock-id у выбранного
+  // <option>) в скрытое поле — дальше все запросы по этой строке (остаток,
+  // сохранение) идут по ID, а не по тексту тип+бренд+модель.
+  function syncMaterialStockId(row) {
+    var selected = row.find('.expense-model-select option:selected');
+    var stockId = selected.attr('data-stock-id') || '';
+    row.find('.expense-material-stock-id').val(stockId);
+    return stockId;
+  }
+
   function loadModelsForRow(row, material, issueId) {
     var modelSelect = row.find('.expense-model-select');
     var materialType = row.find('.expense-type-value').val();
@@ -243,12 +275,20 @@ $(document).ready(function() {
       success: function(data) {
         modelSelect.prop('disabled', false);
         $.each(data, function(i, model) {
-          modelSelect.append('<option value="' + model.id + '">' + model.name + '</option>');
+          modelSelect.append('<option value="' + model.name + '" data-stock-id="' + model.id + '">' + model.name + '</option>');
         });
         if (material && material.model) {
           modelSelect.val(material.model);
+          if (material.material_stock_id) {
+            row.find('.expense-material-stock-id').val(material.material_stock_id);
+          } else {
+            syncMaterialStockId(row);
+          }
           checkStock(row, issueId);
         }
+      },
+      error: function(xhr) {
+        log('models FAILED, status =', xhr.status, xhr.responseText);
       }
     });
   }
@@ -257,6 +297,7 @@ $(document).ready(function() {
     var materialType = row.find('.expense-type-value').val();
     var brand = row.find('.expense-brand-value').val();
     var model = row.find('.expense-model-select').val();
+    var materialStockId = row.find('.expense-material-stock-id').val();
     var stockInfo = row.find('.stock-info');
     var quantityInput = row.find('.expense-quantity-input');
 
@@ -266,6 +307,7 @@ $(document).ready(function() {
     }
 
     var params = { material_type: materialType, brand: brand, model: model };
+    if (materialStockId) params.material_stock_id = materialStockId;
     if (issueId) params.issue_id = issueId;
 
     $.ajax({
@@ -296,6 +338,7 @@ $(document).ready(function() {
         try {
           message = JSON.parse(xhr.responseText).error || message;
         } catch (e) { /* noop */ }
+        log('stock_quantity FAILED, status =', xhr.status, 'params =', params, 'response =', xhr.responseText);
         stockInfo.html('<span class="stock-danger">' + message + '</span>');
       }
     });
@@ -364,7 +407,9 @@ $(document).ready(function() {
   });
 
   $(document).on('change', '.expense-model-select', function() {
-    checkStock($(this).closest('.expense-material-row'), issueId);
+    var row = $(this).closest('.expense-material-row');
+    syncMaterialStockId(row);
+    checkStock(row, issueId);
   });
 
   $(document).on('input', '.expense-quantity-input', function() {
@@ -412,6 +457,7 @@ $(document).ready(function() {
       var brandTyped = row.find('.expense-brand-input').val();
       var brand = row.find('.expense-brand-value').val();
       var model = row.find('.expense-model-select').val();
+      var materialStockId = row.find('.expense-material-stock-id').val();
       var quantity = row.find('.expense-quantity-input').val();
       var id = row.find('input[name="expense[id][]"]').val();
 
@@ -453,15 +499,26 @@ $(document).ready(function() {
         }
       }
 
-      materials.push({ material_type: materialType, brand: brand, model: model, quantity: quantity, id: id });
+      materials.push({
+        material_type: materialType,
+        brand: brand,
+        model: model,
+        material_stock_id: materialStockId,
+        quantity: quantity,
+        id: id
+      });
     });
 
     if (hasErrors) return;
 
     if (materials.length === 0 && removeIds.length === 0) {
+      log('save: nothing to save, submitting form as-is');
       form.submit();
       return;
     }
+
+    var token = $('meta[name="csrf-token"]').attr('content');
+    log('save: sending', { issue_id: issueId, materials: materials, remove_ids: removeIds }, 'csrf token present =', !!token);
 
     $.ajax({
       url: '/expense/save',
@@ -469,10 +526,10 @@ $(document).ready(function() {
       data: { issue_id: issueId, materials: materials, remove_ids: removeIds },
       dataType: 'json',
       beforeSend: function(xhr) {
-        var token = $('meta[name="csrf-token"]').attr('content');
         if (token) xhr.setRequestHeader('X-CSRF-Token', token);
       },
-      success: function() {
+      success: function(response) {
+        log('save: OK', response);
         form.submit();
       },
       error: function(xhr) {
@@ -480,7 +537,8 @@ $(document).ready(function() {
         try {
           message = JSON.parse(xhr.responseText).error || message;
         } catch (e) { /* noop */ }
-        alert('Ошибка при сохранении материалов:\n' + message);
+        log('save: FAILED, status =', xhr.status, 'response =', xhr.responseText);
+        alert('Ошибка при сохранении материалов (' + xhr.status + '):\n' + message);
       }
     });
   }
