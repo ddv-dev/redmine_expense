@@ -19,11 +19,11 @@
   <% if @history.pdf_generated && @history.pdf_file.present? %>
     <p>
       <strong>PDF:</strong> 
-      <%= link_to 'Скачать PDF', download_pdf_history_path(@history) %>
+      <%= link_to 'Скачать PDF', download_pdf_history_path(id: @history.id, project_id: @project.id) %>
     </p>
   <% end %>
 </div>
 
 <p>
-  <%= link_to '← Назад к истории', history_index_path, class: 'btn btn-secondary' %>
+  <%= link_to '← Назад к истории', history_index_path(project_id: @project.id), class: 'btn btn-secondary' %>
 </p>

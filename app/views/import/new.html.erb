@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
     previewContainer.style.display = 'none';
     reportContainer.style.display = 'none';
 
-    fetch('/import/preview', {
+    fetch('/projects/<%= @project.id %>/import/preview', {
       method: 'POST',
       body: formData,
       headers: {
@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.confirmImport = function(dataId, commit) {
     showStatus('info', 'Выполняется импорт...');
 
-    fetch('/import/confirm', {
+    fetch('/projects/<%= @project.id %>/import/confirm', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

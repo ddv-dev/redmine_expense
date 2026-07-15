@@ -7,20 +7,20 @@ class ExpenseController < ApplicationController
   def index
     return unless require_expense_manager
 
-    @total_materials = MaterialStock.count
-    @pending_expenses = IntermediateExpense.pending.count
-    @total_expenses = ExpenseHistory.count
-    @total_quantity = MaterialStock.sum(:quantity)
-    @materials = MaterialStock.order(created_at: :desc).limit(10)
+    @total_materials = project_materials.count
+    @pending_expenses = project_intermediates.pending.count
+    @total_expenses = project_histories.count
+    @total_quantity = project_materials.sum(:quantity)
+    @materials = project_materials.order(created_at: :desc).limit(10)
   end
 
   def materials
-    types = MaterialStock.distinct.order(:material_type).pluck(:material_type)
+    types = project_materials.distinct.order(:material_type).pluck(:material_type)
     render json: types.map { |t| { id: t, name: t } }
   end
 
   def brands
-    brands = MaterialStock.where(material_type: params[:material_type]).distinct.order(:brand).pluck(:brand)
+    brands = project_materials.where(material_type: params[:material_type]).distinct.order(:brand).pluck(:brand)
     render json: brands.map { |b| { id: b, name: b } }
   end
 
@@ -29,8 +29,8 @@ class ExpenseController < ApplicationController
     # Так дальнейшие запросы (остаток, сохранение) идут по ID, а не по
     # тройному текстовому совпадению, которое ломается на "грязных" данных
     # (лишние пробелы, обрезанные наименования и т.п.).
-    models = MaterialStock.where(material_type: params[:material_type], brand: params[:brand])
-                           .order(:model)
+    models = project_materials.where(material_type: params[:material_type], brand: params[:brand])
+                               .order(:model)
     render json: models.map { |m| { id: m.id, name: m.model } }
   end
 
@@ -149,19 +149,22 @@ class ExpenseController < ApplicationController
 
     if request.post?
       ActiveRecord::Base.transaction do
-        IntermediateExpense.delete_all
-        ExpenseHistory.delete_all
-        MaterialStock.delete_all
+        project_intermediates.delete_all
+        project_histories.delete_all
+        project_materials.delete_all
       end
 
       flash[:notice] = 'Склад успешно очищен. Все материалы удалены.'
-      redirect_to expense_index_path
+      redirect_to expense_index_path(project_id: @project.id)
     else
+      @materials_count = project_materials.count
+      @intermediates_count = project_intermediates.count
+      @histories_count = project_histories.count
       render :clear_stock_confirm
     end
   rescue => e
     flash[:error] = "Ошибка при очистке склада: #{e.message}"
-    redirect_to expense_index_path
+    redirect_to expense_index_path(project_id: @project.id)
   end
 
   # Удаляет только PDF-файлы актов, на которые больше не ссылается ни одна
@@ -185,17 +188,37 @@ class ExpenseController < ApplicationController
       end
 
       flash[:notice] = "Удалено осиротевших PDF-файлов: #{deleted_count}"
-      redirect_to expense_index_path
+      redirect_to expense_index_path(project_id: @project.id)
     else
       render :clean_pdfs_confirm
     end
   rescue => e
     flash[:error] = "Ошибка при очистке PDF: #{e.message}"
-    redirect_to expense_index_path
+    redirect_to expense_index_path(project_id: @project.id)
   end
 
   private
 
+  # Все запросы к остаткам/промежуточной таблице/истории идут через
+  # material_stock_id, отфильтрованный по проекту — у intermediate_expenses
+  # и expense_histories своей колонки project_id нет, но материал, на
+  # который они ссылаются, всегда принадлежит одному проекту.
+  def project_materials
+    MaterialStock.where(project_id: @project.id)
+  end
+
+  def project_intermediates
+    IntermediateExpense.where(material_stock_id: project_materials.select(:id))
+  end
+
+  def project_histories
+    ExpenseHistory.where(material_stock_id: project_materials.select(:id))
+  end
+
+  # PDF-файлы актов лежат в общем на диске каталоге (файл истории #42
+  # не имеет отношения к проекту в своем имени), поэтому "осиротевший" файл
+  # проверяется по ВСЕМ проектам сразу — иначе очистка из одного проекта
+  # удалила бы файлы, все еще используемые записями истории другого проекта.
   def orphaned_pdf_files
     dir = Rails.root.join('files', 'redmine_expense')
     return [] unless Dir.exist?(dir)
@@ -209,7 +232,7 @@ class ExpenseController < ApplicationController
   def find_issue
     @issue = Issue.find(params[:issue_id])
 
-    unless User.current.allowed_to?(:view_issues, @issue.project)
+    unless @issue.project_id == @project.id && User.current.allowed_to?(:view_issues, @issue.project)
       Rails.logger.warn "[redmine_expense] find_issue: доступ запрещен (user=#{User.current.id}/#{User.current.login}, issue=#{@issue.id}, project=#{@issue.project_id})"
       render json: { success: false, error: 'Доступ запрещен' }, status: :forbidden
     end
@@ -230,13 +253,14 @@ class ExpenseController < ApplicationController
 
   # Ищет материал прежде всего по первичному ключу (надежно, не зависит от
   # текста), и только если его не передали — по тройке текстовых полей
-  # (для обратной совместимости и запасного варианта).
+  # (для обратной совместимости и запасного варианта). Всегда в пределах
+  # текущего проекта, чтобы нельзя было списать материал чужого склада.
   def find_material_stock(material_stock_id, material_type, brand, model)
     if material_stock_id.present?
-      stock = MaterialStock.find_by(id: material_stock_id)
+      stock = project_materials.find_by(id: material_stock_id)
       return stock if stock
     end
 
-    MaterialStock.find_by(material_type: material_type, brand: brand, model: model)
+    project_materials.find_by(material_type: material_type, brand: brand, model: model)
   end
 end

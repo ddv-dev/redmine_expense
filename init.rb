@@ -9,24 +9,38 @@ Redmine::Plugin.register :redmine_expense do
   author_url ''
 
   settings default: {
-    'project_ids' => [],
     'tracker_ids' => [],
     'status_in_progress' => [],
     'status_resolved' => [],
-    'status_closed' => [],
-    'expense_manager_ids' => [],
-    'expense_contributor_ids' => []
+    'status_closed' => []
   }, partial: 'settings/expense_settings'
 
-  menu :top_menu, :expense, {
+  # Включается/выключается для проекта на вкладке "Настройки" -> "Модули",
+  # как любой другой модуль Redmine. Право require: :loggedin означает, что
+  # оно не завязано на роли — доступ внутри включенного модуля дальше решает
+  # RedmineExpense::Access (менеджеры/контрибьюторы, назначенные per-project
+  # на вкладке "Расход" в настройках проекта), а не роли/права Redmine.
+  project_module :expense do
+    permission :view_expense, {
+      expense: [:index, :materials, :brands, :models, :issue_materials, :stock_quantity, :save, :clear_stock, :clean_pdfs],
+      stock: [:index, :edit, :update, :export],
+      history: [:index, :show, :download_pdf],
+      intermediate: [:index, :approve, :reject],
+      import: [:new, :preview, :confirm]
+    }, require: :loggedin
+  end
+
+  menu :project_menu, :expense, {
     controller: 'expense', action: 'index'
-  }, caption: 'Расход', if: Proc.new { User.current.logged? && RedmineExpense::Access.manager?(User.current) }
+  }, caption: 'Расход', param: :project_id,
+     if: Proc.new { |project| RedmineExpense::Access.manager?(User.current, project) }
 end
 
 require File.expand_path('issue_edit_hook', __dir__)
 require_relative 'lib/redmine_expense/access'
 
-# Хук для подключения JavaScript и CSS.
+# Хук для подключения JavaScript и CSS, и для добавления вкладки "Расход"
+# на страницу настроек проекта.
 # Redmine::Hook::ViewListener регистрирует свои подклассы автоматически при
 # наследовании — явный Redmine::Hook.add_listener здесь был лишним и приводил
 # к двойному подключению expense_fields.js/expense.css на каждой странице.
@@ -34,6 +48,17 @@ class ExpenseViewHook < Redmine::Hook::ViewListener
   def view_layouts_base_html_head(context)
     javascript_include_tag('expense_fields.js', plugin: 'redmine_expense') +
       stylesheet_link_tag('expense.css', plugin: 'redmine_expense')
+  end
+
+  def controller_projects_settings_before_render(context = {})
+    project = context[:project]
+    return unless project&.module_enabled?('expense')
+
+    context[:tabs] << {
+      name: 'expense',
+      partial: 'expense_project_settings/tab',
+      label: :label_expense
+    }
   end
 end
 

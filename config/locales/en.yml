@@ -1,9 +1,4 @@
 en:
   project_module_expense: "Expense"
   label_expense: "Expense"
-
-  permission_view_expense_history: "View expense history"
-  permission_view_expense_stock: "View warehouse stock"
-  permission_manage_expense_stock: "Manage warehouse stock (import/export)"
-  permission_view_intermediate_expense: "View pending write-offs"
-  permission_approve_expense: "Approve/reject write-offs"
+  permission_view_expense: "Access to the \"Expense\" plugin features"

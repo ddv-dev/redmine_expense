@@ -4,7 +4,7 @@ class IntermediateController < ApplicationController
   before_action :require_expense_manager
 
   def index
-    scope = IntermediateExpense.pending.includes(:material_stock, :user, :author).order(created_at: :desc)
+    scope = project_intermediates.pending.includes(:material_stock, :user, :author).order(created_at: :desc)
 
     @intermediate_count = scope.count
     @intermediate_pages = Paginator.new @intermediate_count, per_page_option, params['page']
@@ -12,7 +12,7 @@ class IntermediateController < ApplicationController
   end
 
   def approve
-    @intermediate = IntermediateExpense.find(params[:id])
+    @intermediate = project_intermediates.find(params[:id])
 
     if @intermediate.pending?
       if @intermediate.approve!(User.current)
@@ -28,11 +28,11 @@ class IntermediateController < ApplicationController
       flash[:error] = 'Запись уже обработана'
     end
 
-    redirect_to intermediate_index_path
+    redirect_to intermediate_index_path(project_id: @project.id)
   end
 
   def reject
-    @intermediate = IntermediateExpense.find(params[:id])
+    @intermediate = project_intermediates.find(params[:id])
 
     if @intermediate.pending?
       @intermediate.reject!
@@ -41,6 +41,12 @@ class IntermediateController < ApplicationController
       flash[:error] = 'Запись уже обработана'
     end
 
-    redirect_to intermediate_index_path
+    redirect_to intermediate_index_path(project_id: @project.id)
+  end
+
+  private
+
+  def project_intermediates
+    IntermediateExpense.where(material_stock_id: MaterialStock.where(project_id: @project.id).select(:id))
   end
 end

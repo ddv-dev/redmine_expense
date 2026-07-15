@@ -3,6 +3,8 @@ $(document).ready(function() {
   if (root.length === 0) return; // плагин отключен для этого проекта/трекера/статусов
 
   var issueId = root.data('issue-id') || window.currentIssueId;
+  var projectId = window.currentProjectId;
+  var expenseBase = '/projects/' + projectId + '/expense';
   var statusInProgress = (window.expenseSettings && window.expenseSettings.statusInProgress) || [];
   var statusResolved = (window.expenseSettings && window.expenseSettings.statusResolved) || [];
   var allStatuses = statusInProgress.concat(statusResolved).map(String);
@@ -17,7 +19,7 @@ $(document).ready(function() {
     }
   }
 
-  log('init, issueId =', issueId, 'allStatuses =', allStatuses);
+  log('init, issueId =', issueId, 'projectId =', projectId, 'allStatuses =', allStatuses);
 
   initExpenseFields(issueId);
 
@@ -48,7 +50,7 @@ $(document).ready(function() {
 
   function loadSavedMaterials(issueId) {
     $.ajax({
-      url: '/expense/issue_materials',
+      url: expenseBase + '/issue_materials',
       method: 'GET',
       data: { issue_id: issueId },
       dataType: 'json',
@@ -135,7 +137,7 @@ $(document).ready(function() {
     }
 
     $.ajax({
-      url: '/expense/materials',
+      url: expenseBase + '/materials',
       method: 'GET',
       dataType: 'json',
       success: function(data) {
@@ -166,7 +168,7 @@ $(document).ready(function() {
     if (!materialType) return;
 
     $.ajax({
-      url: '/expense/brands',
+      url: expenseBase + '/brands',
       method: 'GET',
       data: { material_type: materialType },
       dataType: 'json',
@@ -268,7 +270,7 @@ $(document).ready(function() {
     modelSelect.prop('disabled', true).find('option:not(:first)').remove();
 
     $.ajax({
-      url: '/expense/models',
+      url: expenseBase + '/models',
       method: 'GET',
       data: { material_type: materialType, brand: brand },
       dataType: 'json',
@@ -311,7 +313,7 @@ $(document).ready(function() {
     if (issueId) params.issue_id = issueId;
 
     $.ajax({
-      url: '/expense/stock_quantity',
+      url: expenseBase + '/stock_quantity',
       method: 'GET',
       data: params,
       dataType: 'json',
@@ -521,7 +523,7 @@ $(document).ready(function() {
     log('save: sending', { issue_id: issueId, materials: materials, remove_ids: removeIds }, 'csrf token present =', !!token);
 
     $.ajax({
-      url: '/expense/save',
+      url: expenseBase + '/save',
       method: 'POST',
       data: { issue_id: issueId, materials: materials, remove_ids: removeIds },
       dataType: 'json',

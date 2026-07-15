@@ -28,7 +28,7 @@
 
 <div style="display: flex; gap: 15px; margin-top: 20px;">
   <% if @orphaned_files.any? %>
-    <%= form_tag clean_pdfs_expense_path, method: :post do %>
+    <%= form_tag clean_pdfs_expense_path(project_id: @project.id), method: :post do %>
       <%= submit_tag "Удалить #{@orphaned_files.size} файлов",
           class: 'btn btn-danger',
           style: 'padding: 10px 30px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;',
@@ -36,7 +36,7 @@
     <% end %>
   <% end %>
 
-  <%= link_to 'Отмена', expense_index_path,
+  <%= link_to 'Отмена', expense_index_path(project_id: @project.id),
       class: 'btn btn-secondary',
       style: 'padding: 10px 30px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px;' %>
 </div>

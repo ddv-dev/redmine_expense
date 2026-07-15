@@ -57,59 +57,6 @@
     border-top: 1px dashed #ddd;
     clear: both;
   }
-  .role-select {
-    padding: 8px 10px;
-    width: 100%;
-    max-width: 400px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: white;
-    font-size: 13px;
-    height: 38px;
-    box-sizing: border-box;
-  }
-  .user-filter {
-    padding: 8px 10px;
-    width: 100%;
-    max-width: 400px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: white;
-    font-size: 13px;
-    height: 34px;
-    box-sizing: border-box;
-    margin-bottom: 10px;
-  }
-  .user-grid {
-    max-height: 260px;
-    overflow-y: auto;
-    border: 1px solid #e5e5e5;
-    border-radius: 4px;
-    background: white;
-    padding: 5px 0;
-  }
-  .user-grid .checkbox-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .submit-wrapper {
-    margin-top: 20px;
-    text-align: center;
-    clear: both;
-  }
-  .submit-button {
-    padding: 8px 30px;
-    background: #f0f0f0;
-    color: #333333;
-    border: 1px solid #cccccc;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    font-weight: bold;
-    height: auto !important;
-  }
-  .submit-button:hover {
-    background: #e0e0e0;
-  }
   .radio-group {
     display: block;
     padding: 5px 0;
@@ -133,127 +80,61 @@
 
 <h2>Настройки плагина "Расход"</h2>
 
-<%= form_tag({:controller => 'settings', :action => 'plugin', :id => 'redmine_expense'}, :method => :post) do %>
+<p class="settings-hint" style="border-top: none; padding-top: 0;">
+  Плагин включается для конкретного проекта на вкладке "Настройки проекта" -> "Модули" (модуль "Расход"),
+  а список менеджеров/добавляющих материалы для каждого проекта настраивается на вкладке
+  "Расход" в настройках самого проекта. Здесь задаются только общие для всех проектов правила.
+</p>
 
-  <!-- Проекты -->
-  <div class="settings-section">
-    <span class="section-title">Проекты</span>
-    <div class="checkbox-grid">
-      <% Project.all.each do |project| %>
-        <label>
-          <%= check_box_tag 'settings[project_ids][]', project.id, @settings['project_ids'].to_a.include?(project.id.to_s) %>
-          <%= project.name %>
-        </label>
-      <% end %>
-    </div>
-    <span class="settings-hint">Выберите проекты, в которых будет доступен плагин</span>
+<!-- Трекеры -->
+<div class="settings-section">
+  <span class="section-title">Трекеры</span>
+  <div class="checkbox-grid">
+    <% Tracker.all.each do |tracker| %>
+      <label>
+        <%= check_box_tag 'settings[tracker_ids][]', tracker.id, @settings['tracker_ids'].to_a.include?(tracker.id.to_s) %>
+        <%= tracker.name %>
+      </label>
+    <% end %>
   </div>
+  <span class="settings-hint">Выберите трекеры, для которых будет доступен функционал</span>
+</div>
 
-  <!-- Трекеры -->
-  <div class="settings-section">
-    <span class="section-title">Трекеры</span>
-    <div class="checkbox-grid">
-      <% Tracker.all.each do |tracker| %>
-        <label>
-          <%= check_box_tag 'settings[tracker_ids][]', tracker.id, @settings['tracker_ids'].to_a.include?(tracker.id.to_s) %>
-          <%= tracker.name %>
-        </label>
-      <% end %>
-    </div>
-    <span class="settings-hint">Выберите трекеры, для которых будет доступен функционал</span>
+<!-- Статус "В работе" -->
+<div class="settings-section">
+  <span class="section-title">Статус "В работе"</span>
+  <div class="radio-group">
+    <% IssueStatus.all.each do |status| %>
+      <label>
+        <%= radio_button_tag 'settings[status_in_progress]', status.id, @settings['status_in_progress'].to_s == status.id.to_s %>
+        <%= status.name %>
+      </label>
+    <% end %>
   </div>
+</div>
 
-  <!-- Статус "В работе" -->
-  <div class="settings-section">
-    <span class="section-title">Статус "В работе"</span>
-    <div class="radio-group">
-      <% IssueStatus.all.each do |status| %>
-        <label>
-          <%= radio_button_tag 'settings[status_in_progress]', status.id, @settings['status_in_progress'].to_s == status.id.to_s %>
-          <%= status.name %>
-        </label>
-      <% end %>
-    </div>
+<!-- Статус "Решена" -->
+<div class="settings-section">
+  <span class="section-title">Статус "Решена"</span>
+  <div class="radio-group">
+    <% IssueStatus.all.each do |status| %>
+      <label>
+        <%= radio_button_tag 'settings[status_resolved]', status.id, @settings['status_resolved'].to_s == status.id.to_s %>
+        <%= status.name %>
+      </label>
+    <% end %>
   </div>
+</div>
 
-  <!-- Статус "Решена" -->
-  <div class="settings-section">
-    <span class="section-title">Статус "Решена"</span>
-    <div class="radio-group">
-      <% IssueStatus.all.each do |status| %>
-        <label>
-          <%= radio_button_tag 'settings[status_resolved]', status.id, @settings['status_resolved'].to_s == status.id.to_s %>
-          <%= status.name %>
-        </label>
-      <% end %>
-    </div>
+<!-- Статус "Закрыта" -->
+<div class="settings-section">
+  <span class="section-title">Статус "Закрыта"</span>
+  <div class="radio-group">
+    <% IssueStatus.all.each do |status| %>
+      <label>
+        <%= radio_button_tag 'settings[status_closed]', status.id, @settings['status_closed'].to_s == status.id.to_s %>
+        <%= status.name %>
+      </label>
+    <% end %>
   </div>
-
-  <!-- Статус "Закрыта" -->
-  <div class="settings-section">
-    <span class="section-title">Статус "Закрыта"</span>
-    <div class="radio-group">
-      <% IssueStatus.all.each do |status| %>
-        <label>
-          <%= radio_button_tag 'settings[status_closed]', status.id, @settings['status_closed'].to_s == status.id.to_s %>
-          <%= status.name %>
-        </label>
-      <% end %>
-    </div>
-  </div>
-
-  <!-- Доступ к вкладке "Расход" -->
-  <% expense_manager_ids = @settings['expense_manager_ids'].to_a.map(&:to_s) %>
-  <div class="settings-section">
-    <span class="section-title">Доступ к вкладке "Расход"</span>
-    <input type="text" class="user-filter" data-filter-target="expense-manager-grid" placeholder="Поиск пользователя...">
-    <div class="user-grid" id="expense-manager-grid">
-      <div class="checkbox-grid">
-        <% User.active.sorted.each do |user| %>
-          <label data-user-name="<%= user.name.downcase %>">
-            <%= check_box_tag 'settings[expense_manager_ids][]', user.id, expense_manager_ids.include?(user.id.to_s) %>
-            <%= user.name %>
-          </label>
-        <% end %>
-      </div>
-    </div>
-    <span class="settings-hint">Эти пользователи получат полный доступ к вкладке "Расход": история, склад, промежуточная таблица, импорт, подтверждение и отклонение списаний</span>
-  </div>
-
-  <!-- Доступ к добавлению материалов в задачу -->
-  <% expense_contributor_ids = @settings['expense_contributor_ids'].to_a.map(&:to_s) %>
-  <div class="settings-section">
-    <span class="section-title">Доступ к добавлению материалов в задачу</span>
-    <input type="text" class="user-filter" data-filter-target="expense-contributor-grid" placeholder="Поиск пользователя...">
-    <div class="user-grid" id="expense-contributor-grid">
-      <div class="checkbox-grid">
-        <% User.active.sorted.each do |user| %>
-          <label data-user-name="<%= user.name.downcase %>">
-            <%= check_box_tag 'settings[expense_contributor_ids][]', user.id, expense_contributor_ids.include?(user.id.to_s) %>
-            <%= user.name %>
-          </label>
-        <% end %>
-      </div>
-    </div>
-    <span class="settings-hint">Эти пользователи смогут добавлять расходные материалы в карточке задачи. Пользователи с доступом к вкладке "Расход" (выше) могут это делать в любом случае</span>
-  </div>
-
-  <div class="submit-wrapper">
-    <%= submit_tag 'Сохранить настройки', class: 'submit-button' %>
-  </div>
-
-<% end %>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.user-filter').forEach(function(input) {
-    input.addEventListener('input', function() {
-      var query = this.value.toLowerCase();
-      var grid = document.getElementById(this.dataset.filterTarget);
-      grid.querySelectorAll('label[data-user-name]').forEach(function(label) {
-        label.style.display = label.dataset.userName.indexOf(query) === -1 ? 'none' : 'flex';
-      });
-    });
-  });
-});
-</script>
+</div>

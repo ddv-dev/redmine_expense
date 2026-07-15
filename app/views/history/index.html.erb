@@ -2,7 +2,7 @@
 
 <%= render 'shared/expense_menu' %>
 
-<%= form_tag history_index_path, method: :get, id: 'history-filters', style: 'margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;' do %>
+<%= form_tag history_index_path(project_id: @project.id), method: :get, id: 'history-filters', style: 'margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;' do %>
   <div>
     <label style="display:block; font-size:12px; color:#666;">Дата с</label>
     <%= date_field_tag :start_date, @filter_start_date %>
@@ -25,7 +25,7 @@
   </div>
   <div>
     <%= submit_tag 'Фильтровать', class: 'btn btn-primary' %>
-    <%= link_to 'Сбросить', history_index_path, class: 'btn btn-secondary' %>
+    <%= link_to 'Сбросить', history_index_path(project_id: @project.id), class: 'btn btn-secondary' %>
   </div>
 <% end %>
 
@@ -46,7 +46,7 @@
     <tbody>
       <% @histories.each do |history| %>
         <tr>
-          <td><%= link_to history.id, history_show_path(history) %></td>
+          <td><%= link_to history.id, history_show_path(id: history.id, project_id: @project.id) %></td>
           <td>
             <% if history.issue_id %>
               <%= link_to "##{history.issue_id}", issue_path(history.issue_id) %>
@@ -61,7 +61,7 @@
           <td><%= format_time(history.closed_at) %></td>
           <td>
             <% if history.pdf_generated && history.pdf_file.present? %>
-              <%= link_to 'Скачать PDF', download_pdf_history_path(history) %>
+              <%= link_to 'Скачать PDF', download_pdf_history_path(id: history.id, project_id: @project.id) %>
             <% else %>
               <span style="color: #999;">Нет</span>
             <% end %>

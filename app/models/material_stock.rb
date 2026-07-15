@@ -3,6 +3,7 @@ require 'digest'
 class MaterialStock < ApplicationRecord
   self.table_name = 'material_stocks'
 
+  belongs_to :project
   has_many :intermediate_expenses, dependent: :restrict_with_error
   has_many :expense_histories, dependent: :restrict_with_error
 
@@ -10,7 +11,8 @@ class MaterialStock < ApplicationRecord
   validates :brand, presence: true, length: { maximum: 500 }
   validates :model, presence: true, length: { maximum: 500 }
   validates :quantity, numericality: { greater_than_or_equal_to: 0 }
-  validates :hash_key, presence: true, uniqueness: true
+  validates :hash_key, presence: true, uniqueness: { scope: :project_id }
+  validates :project_id, presence: true
 
   before_validation :generate_hash_key
 

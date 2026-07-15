@@ -11,9 +11,9 @@
   <div style="background: white; padding: 15px; border-radius: 4px; margin: 15px 0;">
     <p><strong>Будет удалено:</strong></p>
     <ul>
-      <li><strong><%= MaterialStock.count %></strong> материалов со склада</li>
-      <li><strong><%= IntermediateExpense.count %></strong> записей в промежуточной таблице</li>
-      <li><strong><%= ExpenseHistory.count %></strong> записей истории списаний</li>
+      <li><strong><%= @materials_count %></strong> материалов со склада</li>
+      <li><strong><%= @intermediates_count %></strong> записей в промежуточной таблице</li>
+      <li><strong><%= @histories_count %></strong> записей истории списаний</li>
     </ul>
   </div>
 
@@ -23,14 +23,14 @@
 </div>
 
 <div style="display: flex; gap: 15px; margin-top: 20px;">
-  <%= form_tag clear_stock_expense_path, method: :post do %>
+  <%= form_tag clear_stock_expense_path(project_id: @project.id), method: :post do %>
     <%= submit_tag 'Да, очистить склад',
         class: 'btn btn-danger',
         style: 'padding: 10px 30px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;',
         data: { confirm: 'Вы уверены? Это действие нельзя отменить!' } %>
   <% end %>
 
-  <%= link_to 'Отмена', expense_index_path,
+  <%= link_to 'Отмена', expense_index_path(project_id: @project.id),
       class: 'btn btn-secondary',
       style: 'padding: 10px 30px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px;' %>
 </div>

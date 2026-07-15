@@ -19,7 +19,7 @@
 
 <% if expense_manager? %>
   <div style="margin-bottom: 15px;">
-    <%= link_to 'Экспорт в Excel', export_stock_path, class: 'btn btn-primary' %>
+    <%= link_to 'Экспорт в Excel', export_stock_path(project_id: @project.id), class: 'btn btn-primary' %>
   </div>
 <% end %>
 
@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
       currentId = this.dataset.id;
       document.getElementById('stock-edit-error').style.display = 'none';
 
-      fetch('/stock/' + currentId + '/edit', { headers: { 'Accept': 'application/json' } })
+      fetch('/projects/<%= @project.id %>/stock/' + currentId + '/edit', { headers: { 'Accept': 'application/json' } })
         .then(function(r) { return r.json(); })
         .then(function(material) {
           document.getElementById('edit-material-type').value = material.material_type || '';
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     };
 
-    fetch('/stock/' + currentId, {
+    fetch('/projects/<%= @project.id %>/stock/' + currentId, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

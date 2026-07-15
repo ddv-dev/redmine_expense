@@ -130,13 +130,13 @@ class ImportForm
     { data: data, errors: errors, skipped: skipped, skipped_details: skipped_details, merged: merged }
   end
   
-  def preview_from_data(data)
+  def preview_from_data(data, project_id)
     preview_data = []
     mismatches = []
-    
+
     data.each do |item|
       hash_key = item[:hash_key] || item['hash_key']
-      existing = MaterialStock.find_by(hash_key: hash_key)
+      existing = MaterialStock.find_by(hash_key: hash_key, project_id: project_id)
       
       quantity = item[:quantity] || item['quantity']
       material_type = item[:material_type] || item['material_type']
@@ -192,7 +192,7 @@ class ImportForm
   
   # keep_current: true  -> для позиций с расхождением количества оставляем текущий остаток в БД
   # keep_current: false -> перезаписываем остаток значением из файла (по умолчанию)
-  def import_from_data!(preview_result, keep_current: false)
+  def import_from_data!(preview_result, project_id, keep_current: false)
     updated_count = 0
     created_count = 0
     kept_count = 0
@@ -202,7 +202,8 @@ class ImportForm
     preview_result[:data].each_with_index do |item, index|
       begin
         if item[:status] == 'exists'
-          material = MaterialStock.find(item[:material_stock_id])
+          material = MaterialStock.find_by(id: item[:material_stock_id], project_id: project_id)
+          raise ActiveRecord::RecordNotFound, "материал не найден в этом проекте" unless material
 
           if keep_current && mismatched_ids.include?(material.id)
             kept_count += 1
@@ -215,21 +216,22 @@ class ImportForm
             errors << "Ошибка обновления #{material.display_name}: #{material.errors.full_messages.join(', ')}"
           end
         else
-          existing = MaterialStock.find_by(hash_key: item[:hash_key])
-          
+          existing = MaterialStock.find_by(hash_key: item[:hash_key], project_id: project_id)
+
           if existing
             if existing.update(quantity: item[:quantity])
               updated_count += 1
             end
           else
             material = MaterialStock.new(
+              project_id: project_id,
               material_type: item[:material_type],
               brand: item[:brand],
               model: item[:model],
               quantity: item[:quantity],
               hash_key: item[:hash_key]
             )
-            
+
             if material.save
               created_count += 1
             else

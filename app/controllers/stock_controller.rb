@@ -7,11 +7,11 @@ class StockController < ApplicationController
   before_action :find_material, only: [:edit, :update]
 
   def index
-    scope = MaterialStock.order(:material_type, :brand, :model)
+    scope = MaterialStock.where(project_id: @project.id).order(:material_type, :brand, :model)
 
-    @total_items = MaterialStock.count
-    @total_quantity = MaterialStock.sum(:quantity)
-    @low_stock = MaterialStock.where('quantity < ?', MaterialStock::LOW_STOCK_THRESHOLD).count
+    @total_items = scope.count
+    @total_quantity = scope.sum(:quantity)
+    @low_stock = scope.where('quantity < ?', MaterialStock::LOW_STOCK_THRESHOLD).count
 
     @material_count = @total_items
     @material_pages = Paginator.new @material_count, per_page_option, params['page']
@@ -26,12 +26,12 @@ class StockController < ApplicationController
     if @material.update(material_params)
       respond_to do |format|
         format.json { render json: { success: true, material: material_json(@material) } }
-        format.html { redirect_to stock_index_path, notice: 'Материал обновлен' }
+        format.html { redirect_to stock_index_path(project_id: @project.id), notice: 'Материал обновлен' }
       end
     else
       respond_to do |format|
         format.json { render json: { success: false, errors: @material.errors.full_messages }, status: :unprocessable_entity }
-        format.html { redirect_to stock_index_path, alert: @material.errors.full_messages.join(', ') }
+        format.html { redirect_to stock_index_path(project_id: @project.id), alert: @material.errors.full_messages.join(', ') }
       end
     end
   end
@@ -40,7 +40,7 @@ class StockController < ApplicationController
     package = Axlsx::Package.new
     package.workbook.add_worksheet(name: 'Остатки') do |sheet|
       sheet.add_row ['Номенклатура', 'Наименование поставщика', 'Модификация', 'Количество', 'Описание']
-      MaterialStock.order(:material_type, :brand, :model).find_each do |material|
+      MaterialStock.where(project_id: @project.id).order(:material_type, :brand, :model).find_each do |material|
         sheet.add_row [material.material_type, material.brand, material.model, material.quantity, material.description]
       end
     end
@@ -54,7 +54,9 @@ class StockController < ApplicationController
   private
 
   def find_material
-    @material = MaterialStock.find(params[:id])
+    @material = MaterialStock.find_by!(id: params[:id], project_id: @project.id)
+  rescue ActiveRecord::RecordNotFound
+    render_404
   end
 
   def material_params

@@ -1,0 +1,124 @@
+<% expense_setting = ExpenseProjectSetting.for_project(@project) %>
+<% expense_manager_ids = expense_setting.manager_id_list %>
+<% expense_contributor_ids = expense_setting.contributor_id_list %>
+
+<style>
+  .expense-settings-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #f9f9f9;
+  }
+  .expense-settings-section .section-title {
+    font-weight: bold;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 10px;
+    color: #333;
+    border-bottom: 2px solid #3e5b76;
+    padding-bottom: 5px;
+  }
+  .expense-user-filter {
+    padding: 8px 10px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    font-size: 13px;
+    height: 34px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+  }
+  .expense-user-grid {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: white;
+    padding: 5px 0;
+  }
+  .expense-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px 20px;
+    padding: 5px 10px;
+  }
+  .expense-checkbox-grid label {
+    display: flex;
+    align-items: center;
+    padding: 2px 0;
+    font-weight: normal;
+    cursor: pointer;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .expense-checkbox-grid input[type="checkbox"] {
+    margin-right: 8px;
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+  }
+  .expense-settings-hint {
+    display: block;
+    margin-top: 10px;
+    color: #666;
+    font-size: 0.85em;
+    font-style: italic;
+  }
+</style>
+
+<p><%= l(:text_expense_project_settings_intro, default: 'Пользователи, выбранные ниже, получают доступ к функциям плагина "Расход" в этом проекте. Список пользователей ограничен участниками проекта.') %></p>
+
+<%= form_tag(update_expense_project_settings_path(project_id: @project.id), method: :patch) do %>
+  <div class="expense-settings-section">
+    <span class="section-title">Доступ к вкладке "Расход" (полный доступ)</span>
+    <input type="text" class="expense-user-filter" data-filter-target="expense-project-manager-grid" placeholder="Поиск участника проекта...">
+    <div class="expense-user-grid" id="expense-project-manager-grid">
+      <div class="expense-checkbox-grid">
+        <% @project.users.sorted.each do |user| %>
+          <label data-user-name="<%= user.name.downcase %>">
+            <%= check_box_tag 'manager_ids[]', user.id, expense_manager_ids.include?(user.id.to_s) %>
+            <%= user.name %>
+          </label>
+        <% end %>
+      </div>
+    </div>
+    <span class="expense-settings-hint">История, склад, промежуточная таблица, импорт, подтверждение и отклонение списаний — только в этом проекте</span>
+  </div>
+
+  <div class="expense-settings-section">
+    <span class="section-title">Доступ к добавлению материалов в задачу</span>
+    <input type="text" class="expense-user-filter" data-filter-target="expense-project-contributor-grid" placeholder="Поиск участника проекта...">
+    <div class="expense-user-grid" id="expense-project-contributor-grid">
+      <div class="expense-checkbox-grid">
+        <% @project.users.sorted.each do |user| %>
+          <label data-user-name="<%= user.name.downcase %>">
+            <%= check_box_tag 'contributor_ids[]', user.id, expense_contributor_ids.include?(user.id.to_s) %>
+            <%= user.name %>
+          </label>
+        <% end %>
+      </div>
+    </div>
+    <span class="expense-settings-hint">Могут добавлять расходные материалы в карточке задачи в этом проекте. Пользователи с доступом выше могут это делать в любом случае</span>
+  </div>
+
+  <p><%= submit_tag l(:button_save) %></p>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.expense-user-filter').forEach(function(input) {
+    input.addEventListener('input', function() {
+      var query = this.value.toLowerCase();
+      var grid = document.getElementById(this.dataset.filterTarget);
+      grid.querySelectorAll('label[data-user-name]').forEach(function(label) {
+        label.style.display = label.dataset.userName.indexOf(query) === -1 ? 'none' : 'flex';
+      });
+    });
+  });
+});
+</script>

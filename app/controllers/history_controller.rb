@@ -4,7 +4,8 @@ class HistoryController < ApplicationController
   before_action :require_expense_manager
 
   def index
-    scope = ExpenseHistory.includes(:material_stock, :user, :closer).order(closed_at: :desc)
+    project_scope = ExpenseHistory.joins(:material_stock).where(material_stocks: { project_id: @project.id })
+    scope = project_scope.includes(:material_stock, :user, :closer).order(closed_at: :desc)
     scope = apply_filters(scope)
 
     @filter_user_id = params[:user_id]
@@ -12,8 +13,8 @@ class HistoryController < ApplicationController
     @filter_start_date = params[:start_date]
     @filter_end_date = params[:end_date]
 
-    @users = User.where(id: ExpenseHistory.distinct.pluck(:user_id)).order(:lastname, :firstname)
-    @material_stocks = MaterialStock.where(id: ExpenseHistory.distinct.pluck(:material_stock_id))
+    @users = User.where(id: project_scope.distinct.pluck(:user_id)).order(:lastname, :firstname)
+    @material_stocks = MaterialStock.where(project_id: @project.id)
                                      .order(:material_type, :brand, :model)
 
     @history_count = scope.count
@@ -22,11 +23,11 @@ class HistoryController < ApplicationController
   end
 
   def show
-    @history = ExpenseHistory.includes(:material_stock, :user, :closer).find(params[:id])
+    @history = find_project_history(params[:id])
   end
 
   def download_pdf
-    @history = ExpenseHistory.find(params[:id])
+    @history = find_project_history(params[:id])
 
     if @history.pdf_file.blank? || !File.exist?(@history.pdf_file)
       @history.generate_pdf!
@@ -37,11 +38,16 @@ class HistoryController < ApplicationController
                 filename: "act_#{@history.id}.pdf"
     else
       flash[:error] = 'PDF файл не найден'
-      redirect_to history_show_path(@history)
+      redirect_to history_show_path(id: @history.id, project_id: @project.id)
     end
   end
 
   private
+
+  def find_project_history(id)
+    ExpenseHistory.joins(:material_stock).where(material_stocks: { project_id: @project.id })
+                   .includes(:material_stock, :user, :closer).find(id)
+  end
 
   def apply_filters(scope)
     scope = scope.where(user_id: params[:user_id]) if params[:user_id].present?

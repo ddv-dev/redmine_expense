@@ -2,18 +2,24 @@ module RedmineExpense
   module Access
     module_function
 
-    def manager?(user = User.current)
+    def manager?(user, project)
+      return false unless user && project
       return true if user.admin?
-      ids('expense_manager_ids').include?(user.id.to_s)
+
+      setting = ExpenseProjectSetting.find_by(project_id: project.id)
+      return false unless setting
+
+      setting.manager_id_list.include?(user.id.to_s)
     end
 
-    def contributor?(user = User.current)
-      return true if manager?(user)
-      ids('expense_contributor_ids').include?(user.id.to_s)
-    end
+    def contributor?(user, project)
+      return false unless user && project
+      return true if manager?(user, project)
 
-    def ids(key)
-      Array(Setting.plugin_redmine_expense[key]).map(&:to_s)
+      setting = ExpenseProjectSetting.find_by(project_id: project.id)
+      return false unless setting
+
+      setting.contributor_id_list.include?(user.id.to_s)
     end
   end
 end

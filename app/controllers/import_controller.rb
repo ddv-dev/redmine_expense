@@ -27,7 +27,7 @@ class ImportController < ApplicationController
       data_id = SecureRandom.hex(16)
       save_import_data(data_id, result[:data])
       
-      preview_result = @import.preview_from_data(result[:data])
+      preview_result = @import.preview_from_data(result[:data], @project.id)
       mismatches = @import.find_mismatches(preview_result)
       
       File.delete(temp_file_path) if File.exist?(temp_file_path)
@@ -70,10 +70,10 @@ class ImportController < ApplicationController
     import_data = JSON.parse(File.read(data_file), symbolize_names: true)
 
     @import = ImportForm.new
-    preview_result = @import.preview_from_data(import_data)
+    preview_result = @import.preview_from_data(import_data, @project.id)
 
     keep_current = params[:commit] == 'Оставить текущее'
-    result = @import.import_from_data!(preview_result, keep_current: keep_current)
+    result = @import.import_from_data!(preview_result, @project.id, keep_current: keep_current)
 
     File.delete(data_file) if File.exist?(data_file)
 
