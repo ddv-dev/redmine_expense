@@ -291,8 +291,12 @@ $(document).ready(function() {
           stockInfo.html('<span class="stock-ok">' + infoText + '</span>');
         }
       },
-      error: function() {
-        stockInfo.text('Ошибка загрузки остатка');
+      error: function(xhr) {
+        var message = 'Ошибка загрузки остатка';
+        try {
+          message = JSON.parse(xhr.responseText).error || message;
+        } catch (e) { /* noop */ }
+        stockInfo.html('<span class="stock-danger">' + message + '</span>');
       }
     });
   }
@@ -464,6 +468,10 @@ $(document).ready(function() {
       method: 'POST',
       data: { issue_id: issueId, materials: materials, remove_ids: removeIds },
       dataType: 'json',
+      beforeSend: function(xhr) {
+        var token = $('meta[name="csrf-token"]').attr('content');
+        if (token) xhr.setRequestHeader('X-CSRF-Token', token);
+      },
       success: function() {
         form.submit();
       },
