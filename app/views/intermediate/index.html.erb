@@ -49,7 +49,7 @@
     </tbody>
   </table>
 
-  <%= paginate @intermediate_pages %>
+  <%= pagination_links_full @intermediate_pages, @intermediate_count %>
 <% else %>
   <p class="nodata">Нет записей, ожидающих подтверждения</p>
 <% end %>

@@ -71,7 +71,7 @@
     </tbody>
   </table>
 
-  <%= paginate @history_pages %>
+  <%= pagination_links_full @history_pages, @history_count %>
 <% else %>
   <p class="nodata">Нет данных о списаниях</p>
 <% end %>
