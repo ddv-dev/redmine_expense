@@ -3,8 +3,6 @@ class HistoryController < ApplicationController
 
   before_action { require_expense_permission(:view_expense_history) }
 
-  PER_PAGE = 25
-
   def index
     scope = ExpenseHistory.includes(:material_stock, :user, :closer).order(closed_at: :desc)
     scope = apply_filters(scope)
@@ -19,7 +17,7 @@ class HistoryController < ApplicationController
                                      .order(:material_type, :brand, :model)
 
     @history_count = scope.count
-    @history_pages = Paginator.new @history_count, PER_PAGE, params['page']
+    @history_pages = Paginator.new @history_count, per_page_option, params['page']
     @histories = scope.offset(@history_pages.offset).limit(@history_pages.per_page)
   end
 

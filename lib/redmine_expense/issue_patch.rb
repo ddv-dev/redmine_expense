@@ -24,7 +24,13 @@ module RedmineExpense
 
       closer = User.current
       pending.find_each do |intermediate|
-        intermediate.approve!(closer, closed_by: closer, closed_at: Time.current)
+        if intermediate.approve!(closer, closed_by: closer, closed_at: Time.current)
+          if intermediate.pdf_generation_failed?
+            Rails.logger.error "[redmine_expense] Списание ##{intermediate.id} по задаче ##{id} подтверждено, но PDF-акт не сформирован (см. предыдущую ошибку в логе)"
+          end
+        else
+          Rails.logger.error "[redmine_expense] Не удалось автоматически подтвердить списание ##{intermediate.id} по задаче ##{id}: #{intermediate.errors.full_messages.join(', ')}"
+        end
       rescue => e
         Rails.logger.error "[redmine_expense] Не удалось автоматически подтвердить списание ##{intermediate.id} по задаче ##{id}: #{e.message}"
       end

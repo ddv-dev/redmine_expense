@@ -4,13 +4,11 @@ class IntermediateController < ApplicationController
   before_action(only: [:index]) { require_expense_permission(:view_intermediate_expense) }
   before_action(only: [:approve, :reject]) { require_expense_permission(:approve_expense) }
 
-  PER_PAGE = 25
-
   def index
     scope = IntermediateExpense.pending.includes(:material_stock, :user, :author).order(created_at: :desc)
 
     @intermediate_count = scope.count
-    @intermediate_pages = Paginator.new @intermediate_count, PER_PAGE, params['page']
+    @intermediate_pages = Paginator.new @intermediate_count, per_page_option, params['page']
     @intermediates = scope.offset(@intermediate_pages.offset).limit(@intermediate_pages.per_page)
   end
 
@@ -19,7 +17,11 @@ class IntermediateController < ApplicationController
 
     if @intermediate.pending?
       if @intermediate.approve!(User.current)
-        flash[:notice] = 'Списание подтверждено'
+        if @intermediate.pdf_generation_failed?
+          flash[:warning] = 'Списание подтверждено, но PDF-акт не удалось сформировать. Проверьте лог сервера (wkhtmltopdf) и повторно откройте карточку списания в истории — PDF попробует сформироваться заново при следующем скачивании.'
+        else
+          flash[:notice] = 'Списание подтверждено'
+        end
       else
         flash[:error] = @intermediate.errors.full_messages.join(', ')
       end

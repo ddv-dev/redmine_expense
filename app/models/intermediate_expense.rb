@@ -12,6 +12,13 @@ class IntermediateExpense < ActiveRecord::Base
   scope :approved, -> { where(status: 'approved') }
   scope :rejected, -> { where(status: 'rejected') }
 
+  # Не персистится в БД — флаг для UI, что списание прошло, но PDF не сформировался.
+  attr_reader :pdf_generation_failed
+
+  def pdf_generation_failed?
+    !!@pdf_generation_failed
+  end
+
   # Подтверждает списание: списывает остаток и создает запись в истории.
   # closed_by/closed_at позволяют автоматическому хуку смены статуса задачи
   # передать реального "закрывающего" пользователя и момент закрытия.
@@ -43,7 +50,7 @@ class IntermediateExpense < ActiveRecord::Base
 
     return false if errors.any?
 
-    ExpenseHistory.generate_pdf_for_issue!(issue_id)
+    @pdf_generation_failed = ExpenseHistory.generate_pdf_for_issue!(issue_id).nil?
 
     true
   end

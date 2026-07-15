@@ -7,8 +7,6 @@ class StockController < ApplicationController
   before_action(only: [:edit, :update, :export]) { require_expense_permission(:manage_expense_stock) }
   before_action :find_material, only: [:edit, :update]
 
-  PER_PAGE = 25
-
   def index
     scope = MaterialStock.order(:material_type, :brand, :model)
 
@@ -17,7 +15,7 @@ class StockController < ApplicationController
     @low_stock = MaterialStock.where('quantity < ?', MaterialStock::LOW_STOCK_THRESHOLD).count
 
     @material_count = @total_items
-    @material_pages = Paginator.new @material_count, PER_PAGE, params['page']
+    @material_pages = Paginator.new @material_count, per_page_option, params['page']
     @materials = scope.offset(@material_pages.offset).limit(@material_pages.per_page)
   end
 

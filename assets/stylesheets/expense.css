@@ -85,3 +85,32 @@
   text-decoration: none;
   cursor: pointer;
 }
+
+/* Подстраховка на случай, если тема Redmine не стилизует .pagination сама:
+   без этого список постранички рвётся в вертикальный маркированный список. */
+.pagination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 15px 0;
+}
+
+.pagination ul {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+}
+
+.pagination li {
+  display: inline-block;
+  list-style: none;
+  padding: 0 2px;
+}
+
+.pagination .per-page-links,
+.pagination .items {
+  margin-left: 8px;
+}
