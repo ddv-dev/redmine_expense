@@ -70,7 +70,7 @@ class ExpenseController < ApplicationController
   end
 
   def save
-    unless User.current.allowed_to?(:edit_issue, @issue.project)
+    unless User.current.allowed_to?(:edit_issues, @issue.project)
       Rails.logger.warn "[redmine_expense] save: доступ запрещен (user=#{User.current.id}/#{User.current.login}, issue=#{@issue.id}, project=#{@issue.project_id})"
       render json: { success: false, error: 'Доступ запрещен' }, status: :forbidden
       return
