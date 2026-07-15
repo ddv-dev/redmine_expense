@@ -1,4 +1,4 @@
-<h2>📦 Остатки по складу</h2>
+<h2>Остатки по складу</h2>
 
 <%= render 'shared/expense_menu' %>
 
@@ -19,7 +19,7 @@
 
 <% if expense_authorized?(:manage_expense_stock) %>
   <div style="margin-bottom: 15px;">
-    <%= link_to '📥 Экспорт в Excel', export_stock_path, class: 'btn btn-primary' %>
+    <%= link_to 'Экспорт в Excel', export_stock_path, class: 'btn btn-primary' %>
   </div>
 <% end %>
 
@@ -27,8 +27,8 @@
   <thead>
     <tr>
       <th>Номенклатура</th>
-      <th>Поставщик</th>
-      <th>Модель</th>
+      <th>Наименование поставщика</th>
+      <th>Модификация</th>
       <th>Количество</th>
       <th>Описание</th>
       <% if expense_authorized?(:manage_expense_stock) %>
@@ -48,7 +48,7 @@
         <td><%= material.description %></td>
         <% if expense_authorized?(:manage_expense_stock) %>
           <td>
-            <a href="#" class="edit-material-link" data-id="<%= material.id %>" title="Редактировать">✏️</a>
+            <a href="#" class="edit-material-link" data-id="<%= material.id %>" title="Редактировать">Изменить</a>
           </td>
         <% end %>
       </tr>
@@ -60,22 +60,22 @@
   <p class="nodata">Нет материалов на складе</p>
 <% end %>
 
-<p class="pagination"><%= pagination_links_full @material_pages, @material_count %></p>
+<%= pagination_links_full @material_pages, @material_count %>
 
 <div id="stock-edit-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
   <div style="background:white; max-width:420px; margin:80px auto; padding:20px; border-radius:8px;">
     <h3>Редактировать материал</h3>
     <div id="stock-edit-error" style="display:none; color:#dc3545; margin-bottom:10px;"></div>
     <p>
-      <label>Наименование номенклатуры</label><br>
+      <label>Номенклатура</label><br>
       <input type="text" id="edit-material-type" style="width:100%;">
     </p>
     <p>
-      <label>Поставщик</label><br>
+      <label>Наименование поставщика</label><br>
       <input type="text" id="edit-brand" style="width:100%;">
     </p>
     <p>
-      <label>Модель</label><br>
+      <label>Модификация</label><br>
       <input type="text" id="edit-model" style="width:100%;">
     </p>
     <p>

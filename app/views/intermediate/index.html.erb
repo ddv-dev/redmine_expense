@@ -1,4 +1,4 @@
-<h2>⏳ Ожидают подтверждения</h2>
+<h2>Ожидают подтверждения</h2>
 
 <%= render 'shared/expense_menu' %>
 
@@ -34,10 +34,10 @@
           <td><%= item.status %></td>
           <td>
             <% if item.pending? && (User.current.admin? || User.current.allowed_to?(:approve_expense, nil, global: true)) %>
-              <%= link_to '✅ Подтвердить', approve_intermediate_path(item), method: :put,
+              <%= link_to 'Подтвердить', approve_intermediate_path(item), method: :put,
                       data: { confirm: 'Подтвердить списание?' },
                       style: 'padding: 2px 8px; color: green; text-decoration: none;' %>
-              <%= link_to '❌ Отклонить', reject_intermediate_path(item), method: :put,
+              <%= link_to 'Отклонить', reject_intermediate_path(item), method: :put,
                       data: { confirm: 'Отклонить списание?' },
                       style: 'padding: 2px 8px; color: red; text-decoration: none;' %>
             <% else %>
@@ -49,7 +49,7 @@
     </tbody>
   </table>
 
-  <p class="pagination"><%= pagination_links_full @intermediate_pages, @intermediate_count %></p>
+  <%= pagination_links_full @intermediate_pages, @intermediate_count %>
 <% else %>
   <p class="nodata">Нет записей, ожидающих подтверждения</p>
 <% end %>

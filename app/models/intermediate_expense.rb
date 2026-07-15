@@ -27,6 +27,7 @@ class IntermediateExpense < ActiveRecord::Base
 
     closed_by ||= approver
     closed_at ||= Time.current
+    history = nil
 
     transaction do
       begin
@@ -38,7 +39,7 @@ class IntermediateExpense < ActiveRecord::Base
 
       update!(status: 'approved', approved_at: Time.current, approved_by: approver.id)
 
-      ExpenseHistory.create!(
+      history = ExpenseHistory.create!(
         issue_id: issue_id,
         material_stock_id: material_stock_id,
         quantity_used: quantity_used,
@@ -50,7 +51,7 @@ class IntermediateExpense < ActiveRecord::Base
 
     return false if errors.any?
 
-    @pdf_generation_failed = ExpenseHistory.generate_pdf_for_issue!(issue_id).nil?
+    @pdf_generation_failed = history.generate_pdf!.nil?
 
     true
   end

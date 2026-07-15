@@ -1,4 +1,4 @@
-<h2>📋 История списаний</h2>
+<h2>История списаний</h2>
 
 <%= render 'shared/expense_menu' %>
 
@@ -61,7 +61,7 @@
           <td><%= format_time(history.closed_at) %></td>
           <td>
             <% if history.pdf_generated && history.pdf_file.present? %>
-              <%= link_to '📄 Скачать PDF', download_pdf_history_path(history) %>
+              <%= link_to 'Скачать PDF', download_pdf_history_path(history) %>
             <% else %>
               <span style="color: #999;">Нет</span>
             <% end %>
@@ -71,7 +71,7 @@
     </tbody>
   </table>
 
-  <p class="pagination"><%= pagination_links_full @history_pages, @history_count %></p>
+  <%= pagination_links_full @history_pages, @history_count %>
 <% else %>
   <p class="nodata">Нет данных о списаниях</p>
 <% end %>

@@ -29,13 +29,12 @@ class HistoryController < ApplicationController
     @history = ExpenseHistory.find(params[:id])
 
     if @history.pdf_file.blank? || !File.exist?(@history.pdf_file)
-      ExpenseHistory.generate_pdf_for_issue!(@history.issue_id)
-      @history.reload
+      @history.generate_pdf!
     end
 
     if @history.pdf_file.present? && File.exist?(@history.pdf_file)
       send_file @history.pdf_file, type: 'application/pdf', disposition: 'inline',
-                filename: "act_issue_#{@history.issue_id}.pdf"
+                filename: "act_#{@history.id}.pdf"
     else
       flash[:error] = 'PDF файл не найден'
       redirect_to history_show_path(@history)

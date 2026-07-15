@@ -1,4 +1,4 @@
-<h2>🧹 Очистка осиротевших PDF</h2>
+<h2>Очистка осиротевших PDF</h2>
 
 <%= render 'shared/expense_menu' %>
 
@@ -29,14 +29,14 @@
 <div style="display: flex; gap: 15px; margin-top: 20px;">
   <% if @orphaned_files.any? %>
     <%= form_tag clean_pdfs_expense_path, method: :post do %>
-      <%= submit_tag "🗑️ Удалить #{@orphaned_files.size} файлов",
+      <%= submit_tag "Удалить #{@orphaned_files.size} файлов",
           class: 'btn btn-danger',
           style: 'padding: 10px 30px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;',
           data: { confirm: 'Удалить осиротевшие PDF-файлы? Это действие нельзя отменить.' } %>
     <% end %>
   <% end %>
 
-  <%= link_to '❌ Отмена', expense_index_path,
+  <%= link_to 'Отмена', expense_index_path,
       class: 'btn btn-secondary',
       style: 'padding: 10px 30px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px;' %>
 </div>

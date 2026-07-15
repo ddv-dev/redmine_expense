@@ -40,7 +40,7 @@ class StockController < ApplicationController
   def export
     package = Axlsx::Package.new
     package.workbook.add_worksheet(name: 'Остатки') do |sheet|
-      sheet.add_row ['Наименование номенклатуры', 'Поставщик', 'Модель', 'Количество', 'Описание']
+      sheet.add_row ['Номенклатура', 'Наименование поставщика', 'Модификация', 'Количество', 'Описание']
       MaterialStock.order(:material_type, :brand, :model).find_each do |material|
         sheet.add_row [material.material_type, material.brand, material.model, material.quantity, material.description]
       end

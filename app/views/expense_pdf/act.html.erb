@@ -24,23 +24,21 @@
   <table class="materials">
     <thead>
       <tr>
-        <th>Наименование номенклатуры</th>
-        <th>Поставщик</th>
-        <th>Модель</th>
+        <th>Номенклатура</th>
+        <th>Наименование поставщика</th>
+        <th>Модификация</th>
         <th>Кол-во</th>
         <th>Комментарий</th>
       </tr>
     </thead>
     <tbody>
-      <% histories.each do |history| %>
-        <tr>
-          <td><%= history.material_stock&.material_type %></td>
-          <td><%= history.material_stock&.brand %></td>
-          <td><%= history.material_stock&.model %></td>
-          <td><%= history.quantity_used %></td>
-          <td><%= history.material_stock&.description %></td>
-        </tr>
-      <% end %>
+      <tr>
+        <td><%= history.material_stock&.material_type %></td>
+        <td><%= history.material_stock&.brand %></td>
+        <td><%= history.material_stock&.model %></td>
+        <td><%= history.quantity_used %></td>
+        <td><%= history.material_stock&.description %></td>
+      </tr>
     </tbody>
   </table>
 </body>

@@ -11,29 +11,17 @@ class ExpenseHistory < ActiveRecord::Base
   scope :by_user, ->(user_id) { where(user_id: user_id) }
   scope :by_material, ->(material_stock_id) { where(material_stock_id: material_stock_id) }
 
+  # Один акт — одна позиция: каждая запись истории получает собственный
+  # PDF-файл с единственной строкой материала, даже если в задаче их
+  # списано несколько разных.
   def generate_pdf!
-    self.class.generate_pdf_for_issue!(issue_id)
-    reload
-  end
-
-  # Формирует один PDF-акт на задачу, включающий все её списанные материалы,
-  # и проставляет путь к файлу всем связанным записям истории.
-  def self.generate_pdf_for_issue!(issue_id)
-    histories = where(issue_id: issue_id).includes(:material_stock, :user, :closer).order(:id)
-    return nil if histories.empty?
-
-    issue = Issue.find_by(id: issue_id)
-    return nil unless issue
-
-    last_history = histories.max_by(&:closed_at)
-
     render_locals = {
       issue: issue,
-      histories: histories,
-      accepted_by: issue.author,
-      accepted_at: issue.created_on,
-      issued_by: last_history&.user,
-      issued_at: last_history&.closed_at
+      history: self,
+      accepted_by: issue&.author,
+      accepted_at: issue&.created_on,
+      issued_by: user,
+      issued_at: closed_at
     }
 
     html = ApplicationController.render(template: 'expense_pdf/act', layout: false, locals: render_locals)
@@ -43,23 +31,23 @@ class ExpenseHistory < ActiveRecord::Base
       encoding: 'UTF-8',
       # Резервируем нижнее поле страницы под штампы подписи — это отдельная
       # область wkhtmltopdf (footer), а не просто отступ, поэтому основной
-      # контент физически не может на нее наехать, сколько бы ни было строк.
+      # контент физически не может на нее наехать.
       margin: { top: 15, bottom: 50, left: 15, right: 15 },
       footer: { content: footer_html, spacing: 0 }
     }
-    pdf_options[:exe_path] = wkhtmltopdf_exe_path if wkhtmltopdf_exe_path
+    pdf_options[:exe_path] = self.class.wkhtmltopdf_exe_path if self.class.wkhtmltopdf_exe_path
     pdf_data = WickedPdf.new.pdf_from_string(html, **pdf_options)
 
     dir = Rails.root.join('files', 'redmine_expense')
     FileUtils.mkdir_p(dir)
-    file_path = dir.join("act_issue_#{issue_id}.pdf")
+    file_path = dir.join("act_history_#{id}.pdf")
     File.open(file_path, 'wb') { |f| f.write(pdf_data) }
 
-    where(issue_id: issue_id).update_all(pdf_generated: true, pdf_file: file_path.to_s, updated_at: Time.current)
+    update_columns(pdf_generated: true, pdf_file: file_path.to_s)
 
     file_path.to_s
   rescue => e
-    Rails.logger.error "[redmine_expense] Ошибка генерации PDF для задачи ##{issue_id}: #{e.message}"
+    Rails.logger.error "[redmine_expense] Ошибка генерации PDF для списания ##{id}: #{e.message}"
     nil
   end
 

@@ -1,4 +1,4 @@
-<h2>📄 Детали списания #<%= @history.id %></h2>
+<h2>Детали списания #<%= @history.id %></h2>
 
 <%= render 'shared/expense_menu' %>
 
@@ -19,7 +19,7 @@
   <% if @history.pdf_generated && @history.pdf_file.present? %>
     <p>
       <strong>PDF:</strong> 
-      <%= link_to '📄 Скачать PDF', download_pdf_history_path(@history) %>
+      <%= link_to 'Скачать PDF', download_pdf_history_path(@history) %>
     </p>
   <% end %>
 </div>

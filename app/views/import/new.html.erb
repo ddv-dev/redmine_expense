@@ -3,22 +3,22 @@
 <%= csrf_meta_tags %>
 
 <div id="import-container">
-  <h2>📥 Импорт остатков</h2>
-  
+  <h2>Импорт остатков</h2>
+
   <div id="import-status"></div>
-  
+
   <div id="import-form">
     <div class="box">
       <p>Загрузите Excel файл для обновления остатков.</p>
       <p><strong>Ожидаемая структура:</strong></p>
       <ul>
         <li><strong>Колонка A:</strong> Количество</li>
-        <li><strong>Колонка B:</strong> Наименование номенклатуры</li>
-        <li><strong>Колонка E:</strong> Наименование модификации (модель)</li>
+        <li><strong>Колонка B:</strong> Номенклатура</li>
+        <li><strong>Колонка E:</strong> Модификация</li>
         <li><strong>Колонка G:</strong> Наименование поставщика</li>
       </ul>
-      <p><em>Первичный ключ: Наименование номенклатуры + Наименование модификации + Поставщик</em></p>
-      
+      <p><em>Первичный ключ: Номенклатура + Модификация + Наименование поставщика</em></p>
+
       <form id="import-form-ajax" enctype="multipart/form-data">
         <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
         <div class="tabular">
@@ -28,21 +28,21 @@
           </p>
         </div>
         <p>
-          <button type="button" id="preview-btn" class="btn btn-primary">📊 Предпросмотр</button>
+          <button type="button" id="preview-btn" class="btn btn-primary">Предпросмотр</button>
         </p>
       </form>
     </div>
   </div>
-  
+
   <div id="preview-container" style="display:none;">
-    <h3>📊 Предпросмотр</h3>
+    <h3>Предпросмотр</h3>
     <div id="preview-stats"></div>
     <div id="preview-data"></div>
     <div id="preview-actions" style="margin-top: 20px;"></div>
   </div>
-  
+
   <div id="report-container" style="display:none; margin-top: 20px;">
-    <h3>📋 Отчет об импорте</h3>
+    <h3>Отчет об импорте</h3>
     <div id="report-content"></div>
   </div>
 </div>
@@ -91,26 +91,26 @@ document.addEventListener('DOMContentLoaded', function() {
   const previewData = document.getElementById('preview-data');
   const previewActions = document.getElementById('preview-actions');
   const statusDiv = document.getElementById('import-status');
-  
+
   let currentDataId = null;
   let currentSkipped = [];
-  
+
   previewBtn.addEventListener('click', function() {
     const file = fileInput.files[0];
     if (!file) {
       showStatus('error', 'Пожалуйста, выберите файл');
       return;
     }
-    
+
     const formData = new FormData();
     formData.append('import_form[file]', file);
     formData.append('authenticity_token', document.querySelector('meta[name="csrf-token"]').content);
-    
+
     previewBtn.disabled = true;
-    previewBtn.textContent = '⏳ Загрузка...';
+    previewBtn.textContent = 'Загрузка...';
     previewContainer.style.display = 'none';
     reportContainer.style.display = 'none';
-    
+
     fetch('/import/preview', {
       method: 'POST',
       body: formData,
@@ -126,18 +126,18 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .then(data => {
       previewBtn.disabled = false;
-      previewBtn.textContent = '📊 Предпросмотр';
-      
+      previewBtn.textContent = 'Предпросмотр';
+
       if (!data.success) {
-        showStatus('error', '❌ Ошибка: ' + (data.errors || ['Неизвестная ошибка']).join('<br>'));
+        showStatus('error', 'Ошибка: ' + (data.errors || ['Неизвестная ошибка']).join('<br>'));
         return;
       }
-      
+
       currentDataId = data.data_id;
       currentSkipped = data.skipped_details || [];
-      
+
       const totalInFile = data.total + (data.skipped || 0);
-      let statusMsg = `✅ Файл загружен. Найдено ${data.total} позиций. Пропущено: ${data.skipped || 0}`;
+      let statusMsg = `Файл загружен. Найдено ${data.total} позиций. Пропущено: ${data.skipped || 0}`;
       if (data.merged > 0) {
         statusMsg += `. Объединено повторных партий: ${data.merged} (их количество суммировано с основной позицией)`;
       }
@@ -147,14 +147,14 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .catch(error => {
       previewBtn.disabled = false;
-      previewBtn.textContent = '📊 Предпросмотр';
-      showStatus('error', '❌ Ошибка при загрузке файла: ' + error.message);
+      previewBtn.textContent = 'Предпросмотр';
+      showStatus('error', 'Ошибка при загрузке файла: ' + error.message);
     });
   });
-  
+
   function showPreview(data) {
     previewContainer.style.display = 'block';
-    
+
     let statsHtml = `
       <div style="margin: 15px 0;">
         <span class="import-stat"><strong>${data.total}</strong> <span class="import-stat-label">Всего позиций</span></span>
@@ -166,15 +166,15 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
     `;
     previewStats.innerHTML = statsHtml;
-    
+
     let tableHtml = `
       <table class="list" style="font-size: 13px;">
         <thead>
           <tr>
             <th>Строка</th>
-            <th>Наименование номенклатуры</th>
-            <th>Поставщик</th>
-            <th>Модель</th>
+            <th>Номенклатура</th>
+            <th>Наименование поставщика</th>
+            <th>Модификация</th>
             <th>Количество</th>
             <th>Текущее кол-во</th>
             <th>Статус</th>
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </thead>
         <tbody>
     `;
-    
+
     data.preview.data.slice(0, 50).forEach(function(item) {
       const isMismatch = data.mismatches.some(m => m.material_stock_id === item.material_stock_id);
       tableHtml += `
@@ -193,74 +193,74 @@ document.addEventListener('DOMContentLoaded', function() {
           <td>${item.model}</td>
           <td>${item.quantity}</td>
           <td>${item.current_quantity || '-'}</td>
-          <td>${item.status === 'new' ? '🆕 Новый' : '🔄 Существует'}</td>
+          <td>${item.status === 'new' ? 'Новый' : 'Существует'}</td>
         </tr>
       `;
     });
-    
+
     if (data.preview.data.length > 50) {
       tableHtml += `<tr><td colspan="7" style="text-align: center; color: #666;">Показано 50 из ${data.total} записей</td></tr>`;
     }
-    
+
     tableHtml += '</tbody></table>';
     previewData.innerHTML = tableHtml;
-    
+
     let actionsHtml = '';
-    
+
     if (data.mismatches.length > 0) {
       actionsHtml = `
         <div style="padding: 15px; background: #fff3cd; border-radius: 8px;">
-          <p><strong>⚠️ Обнаружены расхождения в количестве (${data.mismatches.length} позиций)</strong></p>
+          <p><strong>Обнаружены расхождения в количестве (${data.mismatches.length} позиций)</strong></p>
           <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-            <button class="btn btn-secondary" onclick="confirmImport('${currentDataId}', 'Оставить текущее')">📌 Оставить текущее</button>
-            <button class="btn btn-primary" onclick="confirmImport('${currentDataId}', 'Продолжить с новым кол-вом')">🔄 Продолжить с новым кол-вом</button>
-            <button class="btn btn-danger" onclick="cancelImport()">❌ Отмена</button>
+            <button class="btn btn-secondary" onclick="confirmImport('${currentDataId}', 'Оставить текущее')">Оставить текущее</button>
+            <button class="btn btn-primary" onclick="confirmImport('${currentDataId}', 'Продолжить с новым кол-вом')">Продолжить с новым кол-вом</button>
+            <button class="btn btn-danger" onclick="cancelImport()">Отмена</button>
           </div>
         </div>
       `;
     } else {
       actionsHtml = `
         <div style="padding: 15px; background: #d4edda; border-radius: 8px;">
-          <p><strong>✅ Все позиции совпадают. Можно импортировать.</strong></p>
+          <p><strong>Все позиции совпадают. Можно импортировать.</strong></p>
           <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-            <button class="btn btn-primary" onclick="confirmImport('${currentDataId}', 'Подтвердить импорт')">✅ Подтвердить импорт</button>
-            <button class="btn btn-danger" onclick="cancelImport()">❌ Отмена</button>
+            <button class="btn btn-primary" onclick="confirmImport('${currentDataId}', 'Подтвердить импорт')">Подтвердить импорт</button>
+            <button class="btn btn-danger" onclick="cancelImport()">Отмена</button>
           </div>
         </div>
       `;
     }
-    
+
     previewActions.innerHTML = actionsHtml;
   }
-  
+
   function showReport(data) {
     const skipped = data.skipped_details || [];
-    
+
     if (skipped.length === 0) {
       reportContainer.style.display = 'none';
       return;
     }
-    
+
     reportContainer.style.display = 'block';
-    
+
     let html = `
       <div class="report-section" style="background: #f8d7da; border-color: #dc3545;">
-        <h4 style="color: #dc3545;">⚠️ Пропущено ${skipped.length} записей</h4>
+        <h4 style="color: #dc3545;">Пропущено ${skipped.length} записей</h4>
         <p>Эти строки не будут импортированы по указанным причинам:</p>
         <table class="list" style="font-size: 12px;">
           <thead>
             <tr>
               <th>Строка</th>
-              <th>Наименование номенклатуры</th>
-              <th>Поставщик</th>
-              <th>Модель</th>
+              <th>Номенклатура</th>
+              <th>Наименование поставщика</th>
+              <th>Модификация</th>
               <th>Количество</th>
               <th>Причина</th>
             </tr>
           </thead>
           <tbody>
     `;
-    
+
     skipped.forEach(function(item) {
       html += `
         <tr class="skipped-row">
@@ -273,22 +273,22 @@ document.addEventListener('DOMContentLoaded', function() {
         </tr>
       `;
     });
-    
+
     html += `
           </tbody>
         </table>
         <p style="margin-top: 10px; color: #666; font-size: 12px;">
-          💡 <strong>Рекомендация:</strong> Проверьте эти строки в Excel файле и исправьте указанные проблемы.
+          <strong>Рекомендация:</strong> Проверьте эти строки в Excel файле и исправьте указанные проблемы.
         </p>
       </div>
     `;
-    
+
     reportContent.innerHTML = html;
   }
-  
+
   window.confirmImport = function(dataId, commit) {
-    showStatus('info', '⏳ Выполняется импорт...');
-    
+    showStatus('info', 'Выполняется импорт...');
+
     fetch('/import/confirm', {
       method: 'POST',
       headers: {
@@ -303,12 +303,12 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        showStatus('success', '✅ ' + data.message);
+        showStatus('success', data.message);
         previewContainer.style.display = 'none';
         fileInput.value = '';
         setTimeout(() => location.reload(), 3000);
       } else {
-        let errorMsg = '❌ Ошибка при импорте';
+        let errorMsg = 'Ошибка при импорте';
         if (data.errors && data.errors.length > 0) {
           errorMsg += ': ' + data.errors.slice(0, 5).join('<br>');
           if (data.errors.length > 5) {
@@ -319,31 +319,26 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     })
     .catch(error => {
-      showStatus('error', '❌ Ошибка при импорте: ' + error.message);
+      showStatus('error', 'Ошибка при импорте: ' + error.message);
     });
   };
-  
+
   window.cancelImport = function() {
     previewContainer.style.display = 'none';
     reportContainer.style.display = 'none';
-    showStatus('info', 'ℹ️ Импорт отменен');
+    showStatus('info', 'Импорт отменен');
   };
-  
+
   function showStatus(type, message) {
     const colors = {
       success: '#d4edda',
       error: '#f8d7da',
       info: '#d1ecf1'
     };
-    const icons = {
-      success: '✅',
-      error: '❌',
-      info: 'ℹ️'
-    };
-    
+
     statusDiv.innerHTML = `
       <div style="padding: 15px; background: ${colors[type]}; border: 1px solid ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'}; border-radius: 4px; margin-bottom: 20px;">
-        ${icons[type]} ${message}
+        ${message}
       </div>
     `;
   }
