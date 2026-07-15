@@ -30,7 +30,7 @@ class ExpenseHistory < ActiveRecord::Base
     html = ApplicationController.render(
       template: 'expense_pdf/act',
       layout: false,
-      assigns: {
+      locals: {
         issue: issue,
         histories: histories,
         accepted_by: issue.author,
