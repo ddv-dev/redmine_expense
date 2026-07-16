@@ -33,7 +33,7 @@ Redmine::Plugin.register :redmine_expense do
   menu :project_menu, :expense, {
     controller: 'expense', action: 'index'
   }, caption: 'Расход', param: :project_id,
-     if: Proc.new { |project| RedmineExpense::Access.manager?(User.current, project) }
+     if: Proc.new { |project| User.current.admin? || User.current.allowed_to?(:edit_project, project) }
 end
 
 require File.expand_path('issue_edit_hook', __dir__)
@@ -56,7 +56,7 @@ class ExpenseViewHook < Redmine::Hook::ViewListener
 
     context[:tabs] << {
       name: 'expense',
-      partial: 'expense_project_settings/tab',
+      partial: 'redmine_expense/expense_project_settings/tab',
       label: :label_expense
     }
   end
@@ -70,3 +70,4 @@ Rails.configuration.to_prepare do
     Issue.include(RedmineExpense::IssuePatch)
   end
 end
+require File.expand_path('lib/redmine_expense/projects_helper_patch', __dir__)
