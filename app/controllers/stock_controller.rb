@@ -18,6 +18,20 @@ class StockController < ApplicationController
     @materials = scope.offset(@material_pages.offset).limit(@material_pages.per_page)
   end
 
+  # Ручное добавление новой позиции на склад проекта (в дополнение к
+  # массовому импорту из Excel) — например, для единичной позиции, которую
+  # проще завести вручную, чем готовить файл.
+  def create
+    @material = MaterialStock.new(material_params.merge(project_id: @project.id))
+
+    if @material.save
+      redirect_to stock_index_path(project_id: @project.id), notice: 'Материал добавлен на склад'
+    else
+      flash[:error] = @material.errors.full_messages.join(', ')
+      redirect_to stock_index_path(project_id: @project.id)
+    end
+  end
+
   def edit
     render json: material_json(@material)
   end

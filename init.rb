@@ -27,9 +27,9 @@ Redmine::Plugin.register :redmine_expense do
   project_module :expense do
     permission :view_expense, {
       expense: [:index, :materials, :resolve_stock, :issue_materials, :stock_quantity, :save, :clear_stock, :clean_pdfs],
-      stock: [:index, :edit, :update, :export],
+      stock: [:index, :create, :edit, :update, :export],
       history: [:index, :show, :download_pdf],
-      intermediate: [:index, :create, :approve, :reject],
+      intermediate: [:index, :approve, :reject],
       import: [:new, :preview, :confirm],
       period_acts: [:create, :index, :show, :signed, :sign, :download_pdf]
     }, public: true, require: :loggedin

@@ -22,6 +22,7 @@ Rails.application.routes.draw do
     # Склад
     get '/stock', to: 'stock#index', as: 'stock_index'
     get '/stock/export', to: 'stock#export', as: 'export_stock'
+    post '/stock', to: 'stock#create', as: 'create_stock'
     get '/stock/:id/edit', to: 'stock#edit', as: 'edit_stock'
     patch '/stock/:id', to: 'stock#update', as: 'update_stock'
 
@@ -40,7 +41,6 @@ Rails.application.routes.draw do
 
     # Промежуточная таблица
     get '/intermediate', to: 'intermediate#index', as: 'intermediate_index'
-    post '/intermediate', to: 'intermediate#create', as: 'create_intermediate'
     put '/intermediate/:id/approve', to: 'intermediate#approve', as: 'approve_intermediate'
     put '/intermediate/:id/reject', to: 'intermediate#reject', as: 'reject_intermediate'
 

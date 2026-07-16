@@ -18,8 +18,9 @@
 </div>
 
 <% if expense_manager? %>
-  <div style="margin-bottom: 15px;">
+  <div style="margin-bottom: 15px; display: flex; gap: 10px;">
     <%= link_to 'Экспорт в Excel', export_stock_path(project_id: @project.id), class: 'btn btn-primary' %>
+    <button type="button" id="stock-add-btn" class="btn btn-primary">+ Добавить позицию</button>
   </div>
 <% end %>
 
@@ -62,6 +63,53 @@
 
 
 <span class="pagination" style="margin-top:40px"> <%= pagination_links_full @material_pages, @material_count %></span>
+
+<% if expense_manager? %>
+  <div id="stock-add-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="background:white; max-width:420px; margin:80px auto; padding:20px; border-radius:8px;">
+      <h3>Добавить позицию на склад</h3>
+      <%= form_tag create_stock_path(project_id: @project.id), method: :post do %>
+        <p>
+          <label>Номенклатура</label><br>
+          <%= text_field_tag 'material_stock[material_type]', nil, style: 'width:100%;' %>
+        </p>
+        <p>
+          <label>Наименование поставщика</label><br>
+          <%= text_field_tag 'material_stock[brand]', nil, style: 'width:100%;' %>
+        </p>
+        <p>
+          <label>Модификация</label><br>
+          <%= text_field_tag 'material_stock[model]', nil, style: 'width:100%;' %>
+        </p>
+        <p>
+          <label>Количество</label><br>
+          <%= number_field_tag 'material_stock[quantity]', nil, step: '0.01', min: '0', style: 'width:100%;' %>
+        </p>
+        <p>
+          <label>Описание</label><br>
+          <%= text_area_tag 'material_stock[description]', nil, style: 'width:100%;' %>
+        </p>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" id="stock-add-cancel" class="btn btn-secondary">Отмена</button>
+          <%= submit_tag 'Добавить', class: 'btn btn-primary' %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var addModal = document.getElementById('stock-add-modal');
+    document.getElementById('stock-add-btn').addEventListener('click', function() {
+      addModal.style.display = 'block';
+    });
+    document.getElementById('stock-add-cancel').addEventListener('click', function() {
+      addModal.style.display = 'none';
+    });
+  });
+  </script>
+<% end %>
+
 <div id="stock-edit-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
   <div style="background:white; max-width:420px; margin:80px auto; padding:20px; border-radius:8px;">
     <h3>Редактировать материал</h3>

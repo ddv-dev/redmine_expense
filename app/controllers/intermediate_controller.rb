@@ -33,49 +33,6 @@ class IntermediateController < ApplicationController
     redirect_to intermediate_index_path(project_id: @project.id)
   end
 
-  # Ручное добавление расходного материала в промежуточную таблицу — минуя
-  # форму задачи, для случаев, когда контрибьютор забыл добавить материал
-  # или у него нет доступа к самой задаче.
-  def create
-    issue = Issue.find_by(id: params[:issue_id])
-    if issue.nil? || issue.project_id != @project.id
-      flash[:error] = 'Задача не найдена в этом проекте'
-      redirect_to intermediate_index_path(project_id: @project.id) and return
-    end
-
-    stock = MaterialStock.where(project_id: @project.id).where(material_type: params[:material_type]).order(:id).first
-    if stock.nil?
-      flash[:error] = 'Материал не найден на складе проекта'
-      redirect_to intermediate_index_path(project_id: @project.id) and return
-    end
-
-    quantity = params[:quantity].to_f
-    if quantity <= 0
-      flash[:error] = 'Количество должно быть больше нуля'
-      redirect_to intermediate_index_path(project_id: @project.id) and return
-    end
-
-    if quantity > stock.available_quantity
-      flash[:error] = "Недостаточно материала «#{stock.display_name}» на складе (доступно: #{stock.available_quantity})"
-      redirect_to intermediate_index_path(project_id: @project.id) and return
-    end
-
-    IntermediateExpense.create!(
-      issue_id: issue.id,
-      material_stock_id: stock.id,
-      quantity_used: quantity,
-      user_id: User.current.id,
-      author_id: issue.author_id,
-      status: 'pending'
-    )
-
-    flash[:notice] = 'Материал добавлен и ожидает подтверждения'
-    redirect_to intermediate_index_path(project_id: @project.id)
-  rescue => e
-    flash[:error] = "Ошибка при добавлении материала: #{e.message}"
-    redirect_to intermediate_index_path(project_id: @project.id)
-  end
-
   def reject
     @intermediate = project_intermediates.find(params[:id])
 
