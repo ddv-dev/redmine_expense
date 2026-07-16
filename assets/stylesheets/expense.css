@@ -44,11 +44,6 @@
   vertical-align: middle;
 }
 
-.expense-model-select {
-  flex: 1 1 140px;
-  min-width: 120px;
-}
-
 .expense-autocomplete-wrap {
   position: relative;
   flex: 1 1 200px;

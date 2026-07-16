@@ -27,6 +27,15 @@
           class: 'btn btn-primary',
           style: "padding: 8px 20px; background: #{current_page?(new_import_path(project_id: @project.id)) ? '#3e5b76' : '#6c757d'}; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;" %>
     <% end %>
+
+    <% if committee_member? %>
+      <%= link_to 'Подписание', period_acts_index_path(project_id: @project.id),
+          class: 'btn btn-primary',
+          style: "padding: 8px 20px; background: #{current_page?(period_acts_index_path(project_id: @project.id)) ? '#3e5b76' : '#6c757d'}; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;" %>
+      <%= link_to 'Подписанные акты', signed_period_acts_path(project_id: @project.id),
+          class: 'btn btn-primary',
+          style: "padding: 8px 20px; background: #{current_page?(signed_period_acts_path(project_id: @project.id)) ? '#3e5b76' : '#6c757d'}; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;" %>
+    <% end %>
   </div>
 
   <% if expense_manager? %>

@@ -1,0 +1,41 @@
+<h2>Подписание актов</h2>
+
+<%= render 'shared/expense_menu' %>
+
+<% if @acts.any? %>
+  <table class="list">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Период</th>
+        <th>Создал</th>
+        <th>Подписи</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @acts.each do |act| %>
+        <% requested_signatures = act.period_act_signatures.select(&:requested?) %>
+        <% signed_count = requested_signatures.count { |s| s.status == 'signed' } %>
+        <% requested_count = requested_signatures.count %>
+        <% my_signature = requested_signatures.find { |s| s.user_id == User.current.id && s.status == 'pending' } %>
+        <tr>
+          <td><%= link_to act.id, period_act_show_path(id: act.id, project_id: @project.id) %></td>
+          <td><%= format_date(act.start_date) %> — <%= format_date(act.end_date) %></td>
+          <td><%= act.creator&.name || 'Неизвестен' %></td>
+          <td><%= signed_count %> из <%= requested_count %> подписали</td>
+          <td>
+            <%= link_to 'Просмотр', period_act_show_path(id: act.id, project_id: @project.id) %>
+            <% if my_signature %>
+              <%= link_to 'Подписать', sign_period_act_path(id: act.id, project_id: @project.id), method: :put,
+                    data: { confirm: 'Подписать акт простой электронной подписью?' },
+                    style: 'margin-left: 10px; color: green;' %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p class="nodata">Нет актов, ожидающих подписания</p>
+<% end %>

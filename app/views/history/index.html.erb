@@ -1,3 +1,7 @@
+<% expense_project_setting = ExpenseProjectSetting.for_project(@project) %>
+<% act_committee_users = User.where(id: expense_project_setting.committee_id_list).sorted %>
+<% act_chairman = expense_project_setting.chairman_id.present? ? User.find_by(id: expense_project_setting.chairman_id) : nil %>
+
 <h2>История списаний</h2>
 
 <%= render 'shared/expense_menu' %>
@@ -26,6 +30,13 @@
   <div>
     <%= submit_tag 'Фильтровать', class: 'btn btn-primary' %>
     <%= link_to 'Сбросить', history_index_path(project_id: @project.id), class: 'btn btn-secondary' %>
+  </div>
+<% end %>
+
+<% if expense_manager? %>
+  <div style="margin-bottom: 20px;">
+    <button type="button" id="generate-act-btn" class="btn btn-primary">Генерация акта</button>
+    <span style="color: #666; font-size: 12px; margin-left: 8px;">По датам "с"/"по" из фильтра выше</span>
   </div>
 <% end %>
 
@@ -74,4 +85,83 @@
   <%= pagination_links_full @history_pages, @history_count %>
 <% else %>
   <p class="nodata">Нет данных о списаниях</p>
+<% end %>
+
+<% if expense_manager? %>
+  <div id="generate-act-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="background:white; max-width:480px; margin:80px auto; padding:20px; border-radius:8px;">
+      <h3>Отправить комиссии</h3>
+      <p style="color:#666; font-size:13px;">Период: <strong id="generate-act-period"></strong></p>
+
+      <% if act_committee_users.empty? %>
+        <p>Комиссия не настроена. <%= link_to 'Настроить в проекте (Настройки -> Расход)', settings_project_path(@project, tab: 'expense') %></p>
+      <% else %>
+        <% if act_chairman %>
+          <p style="color:#666; font-size:13px;">Председатель: <%= act_chairman.name %> (числится в акте, подпись не запрашивается)</p>
+        <% end %>
+        <p style="font-size:13px;">Снимите галку у тех, чью подпись сейчас запрашивать не нужно (например, в отпуске) — в акте они всё равно будут числиться членами комиссии.</p>
+        <div style="max-height:220px; overflow-y:auto; border:1px solid #e5e5e5; border-radius:4px; padding:8px;">
+          <% act_committee_users.each do |user| %>
+            <label style="display:block; padding:3px 0;">
+              <input type="checkbox" class="generate-act-signer" value="<%= user.id %>" checked> <%= user.name %>
+            </label>
+          <% end %>
+        </div>
+      <% end %>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:15px;">
+        <button type="button" id="generate-act-cancel" class="btn btn-secondary">Отмена</button>
+        <% if act_committee_users.any? %>
+          <button type="button" id="generate-act-submit" class="btn btn-primary">Отправить</button>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <%= form_tag generate_period_act_path(project_id: @project.id), method: :post, id: 'generate-act-form', style: 'display:none;' do %>
+    <%= hidden_field_tag :start_date, '', id: 'generate-act-start-date' %>
+    <%= hidden_field_tag :end_date, '', id: 'generate-act-end-date' %>
+    <div id="generate-act-signer-inputs"></div>
+  <% end %>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('generate-act-modal');
+    var openBtn = document.getElementById('generate-act-btn');
+    if (!openBtn) return;
+
+    openBtn.addEventListener('click', function() {
+      var startDate = document.getElementById('start_date').value;
+      var endDate = document.getElementById('end_date').value;
+      if (!startDate || !endDate) {
+        alert('Укажите период (дата с / дата по) в фильтре выше перед генерацией акта');
+        return;
+      }
+      document.getElementById('generate-act-start-date').value = startDate;
+      document.getElementById('generate-act-end-date').value = endDate;
+      document.getElementById('generate-act-period').textContent = startDate + ' — ' + endDate;
+      modal.style.display = 'block';
+    });
+
+    document.getElementById('generate-act-cancel').addEventListener('click', function() {
+      modal.style.display = 'none';
+    });
+
+    var submitBtn = document.getElementById('generate-act-submit');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function() {
+        var container = document.getElementById('generate-act-signer-inputs');
+        container.innerHTML = '';
+        document.querySelectorAll('.generate-act-signer:checked').forEach(function(cb) {
+          var input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'signer_ids[]';
+          input.value = cb.value;
+          container.appendChild(input);
+        });
+        document.getElementById('generate-act-form').submit();
+      });
+    }
+  });
+  </script>
 <% end %>

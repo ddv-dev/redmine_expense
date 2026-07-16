@@ -1,6 +1,7 @@
 <% expense_setting = ExpenseProjectSetting.for_project(@project) %>
 <% expense_manager_ids = expense_setting.manager_id_list %>
 <% expense_contributor_ids = expense_setting.contributor_id_list %>
+<% expense_committee_ids = expense_setting.committee_id_list %>
 
 <style>
   .expense-settings-section {
@@ -104,6 +105,33 @@
       </div>
     </div>
     <span class="expense-settings-hint">Могут добавлять расходные материалы в карточке задачи в этом проекте. Пользователи с доступом выше могут это делать в любом случае</span>
+  </div>
+
+  <div class="expense-settings-section">
+    <span class="section-title">Комиссия для подписания актов</span>
+    <input type="text" class="expense-user-filter" data-filter-target="expense-project-committee-grid" placeholder="Поиск участника проекта...">
+    <div class="expense-user-grid" id="expense-project-committee-grid">
+      <div class="expense-checkbox-grid">
+        <% @project.users.sorted.each do |user| %>
+          <label data-user-name="<%= user.name.downcase %>">
+            <%= check_box_tag 'committee_ids[]', user.id, expense_committee_ids.include?(user.id.to_s) %>
+            <%= user.name %>
+          </label>
+        <% end %>
+      </div>
+    </div>
+    <span class="expense-settings-hint">При генерации акта за период на подпись по умолчанию запрашиваются все члены комиссии — можно снять галку у части из них прямо при генерации, если, например, кто-то в отпуске. В самом акте всё равно указывается вся комиссия</span>
+  </div>
+
+  <div class="expense-settings-section">
+    <span class="section-title">Председатель комиссии</span>
+    <select name="chairman_id" class="expense-user-filter">
+      <option value="">-- Не выбран --</option>
+      <% @project.users.sorted.each do |user| %>
+        <option value="<%= user.id %>" <%= 'selected' if expense_setting.chairman_id.to_s == user.id.to_s %>><%= user.name %></option>
+      <% end %>
+    </select>
+    <span class="expense-settings-hint">Указывается в акте как "Председатель", подпись в системе не запрашивается — председатель подписывает акт отдельно, за рамками плагина (квалифицированной электронной подписью или на бумаге)</span>
   </div>
 
   <p><%= submit_tag l(:button_save) %></p>

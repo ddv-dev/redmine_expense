@@ -4,7 +4,7 @@ module ExpenseAuthorization
   included do
     before_action :require_login
     before_action :find_expense_project
-    helper_method :expense_manager?, :expense_contributor? if respond_to?(:helper_method)
+    helper_method :expense_manager?, :expense_contributor?, :committee_member? if respond_to?(:helper_method)
   end
 
   # Полный доступ к вкладке "Расход" в рамках текущего проекта (история,
@@ -26,12 +26,26 @@ module ExpenseAuthorization
     false
   end
 
+  # Вкладки "Подписание"/"Подписанные акты" — доступны менеджерам плагина
+  # (для контроля) и членам комиссии/председателю (чтобы подписывать и видеть
+  # готовые акты).
+  def require_committee_access
+    return true if committee_member?
+
+    render_expense_forbidden
+    false
+  end
+
   def expense_manager?
     RedmineExpense::Access.manager?(User.current, @project)
   end
 
   def expense_contributor?
     RedmineExpense::Access.contributor?(User.current, @project)
+  end
+
+  def committee_member?
+    expense_manager? || RedmineExpense::Access.committee_member?(User.current, @project)
   end
 
   private

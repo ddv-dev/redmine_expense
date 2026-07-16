@@ -1,7 +1,7 @@
 class ExpenseController < ApplicationController
   include ExpenseAuthorization
 
-  before_action :require_expense_contributor, only: [:materials, :brands, :models, :issue_materials, :stock_quantity, :save]
+  before_action :require_expense_contributor, only: [:materials, :resolve_stock, :issue_materials, :stock_quantity, :save]
   before_action :find_issue, only: [:issue_materials, :stock_quantity, :save]
 
   def index
@@ -19,19 +19,17 @@ class ExpenseController < ApplicationController
     render json: types.map { |t| { id: t, name: t } }
   end
 
-  def brands
-    brands = project_materials.where(material_type: params[:material_type]).distinct.order(:brand).pluck(:brand)
-    render json: brands.map { |b| { id: b, name: b } }
-  end
+  # У одной "Номенклатуры" в проекте теоретически может быть несколько позиций
+  # склада (разные поставщик/модификация) — форма задачи их больше не
+  # различает, всегда берется первая заведенная позиция этого типа.
+  def resolve_stock
+    stock = project_materials.where(material_type: params[:material_type]).order(:id).first
 
-  def models
-    # id — реальный первичный ключ MaterialStock, а не текст модели.
-    # Так дальнейшие запросы (остаток, сохранение) идут по ID, а не по
-    # тройному текстовому совпадению, которое ломается на "грязных" данных
-    # (лишние пробелы, обрезанные наименования и т.п.).
-    models = project_materials.where(material_type: params[:material_type], brand: params[:brand])
-                               .order(:model)
-    render json: models.map { |m| { id: m.id, name: m.model } }
+    if stock
+      render json: { id: stock.id, brand: stock.brand, model: stock.model, quantity: stock.quantity }
+    else
+      render json: { error: 'Материал не найден' }, status: :not_found
+    end
   end
 
   def issue_materials
@@ -90,8 +88,6 @@ class ExpenseController < ApplicationController
 
     materials.each do |material|
       mat_type = material[:material_type] || material['material_type']
-      brand = material[:brand] || material['brand']
-      model = material[:model] || material['model']
       quantity = material[:quantity] || material['quantity']
       mat_id = material[:id] || material['id']
       mat_stock_id = material[:material_stock_id] || material['material_stock_id']
@@ -100,13 +96,13 @@ class ExpenseController < ApplicationController
 
       quantity_f = quantity.to_f
       if quantity_f <= 0
-        errors << "Количество должно быть больше нуля для «#{mat_type} #{brand} #{model}»"
+        errors << "Количество должно быть больше нуля для «#{mat_type}»"
         next
       end
 
-      stock = find_material_stock(mat_stock_id, mat_type, brand, model)
+      stock = find_material_stock(mat_stock_id, mat_type, nil, nil)
       unless stock
-        errors << "Материал «#{mat_type} #{brand} #{model}» не найден в базе"
+        errors << "Материал «#{mat_type}» не найден в базе"
         next
       end
 

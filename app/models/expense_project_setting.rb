@@ -19,6 +19,14 @@ class ExpenseProjectSetting < ApplicationRecord
     self.contributor_ids = Array(ids).map(&:to_s).reject(&:blank?).join(',')
   end
 
+  def committee_id_list
+    (committee_ids || '').split(',').map(&:strip).reject(&:blank?)
+  end
+
+  def committee_id_list=(ids)
+    self.committee_ids = Array(ids).map(&:to_s).reject(&:blank?).join(',')
+  end
+
   def self.for_project(project)
     return new unless project
     find_by(project_id: project.id) || new(project_id: project.id)

@@ -1,0 +1,36 @@
+<h2>Подписанные акты</h2>
+
+<%= render 'shared/expense_menu' %>
+
+<% if @acts.any? %>
+  <table class="list">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Период</th>
+        <th>Создал</th>
+        <th>Подписан</th>
+        <th>PDF</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @acts.each do |act| %>
+        <tr>
+          <td><%= link_to act.id, period_act_show_path(id: act.id, project_id: @project.id) %></td>
+          <td><%= format_date(act.start_date) %> — <%= format_date(act.end_date) %></td>
+          <td><%= act.creator&.name || 'Неизвестен' %></td>
+          <td><%= format_time(act.updated_at) %></td>
+          <td>
+            <% if act.pdf_file.present? %>
+              <%= link_to 'Скачать PDF', download_pdf_period_act_path(id: act.id, project_id: @project.id) %>
+            <% else %>
+              <span style="color: #999;">Нет</span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p class="nodata">Нет подписанных актов</p>
+<% end %>

@@ -1,0 +1,79 @@
+<h2>Акт #<%= @act.id %></h2>
+
+<%= render 'shared/expense_menu' %>
+
+<div class="box">
+  <p><strong>Проект:</strong> <%= @project.name %></p>
+  <p><strong>Период:</strong> <%= format_date(@act.start_date) %> — <%= format_date(@act.end_date) %></p>
+  <p><strong>Статус:</strong> <%= @act.signed? ? 'Полностью подписан' : 'Ожидает подписей' %></p>
+</div>
+
+<h3>Материалы</h3>
+<table class="list">
+  <thead>
+    <tr>
+      <th>№ п.п.</th>
+      <th>Наименование номенклатуры</th>
+      <th>Количество</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @act.grouped_materials.each_with_index do |item, index| %>
+      <tr>
+        <td><%= index + 1 %></td>
+        <td><%= item[:material_type] %></td>
+        <td><%= item[:quantity] %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h3>Комиссия</h3>
+<table class="list">
+  <thead>
+    <tr>
+      <th>ФИО</th>
+      <th>Статус</th>
+      <th>Дата подписания</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if @act.chairman %>
+      <tr>
+        <td><%= @act.chairman.name %> (Председатель)</td>
+        <td>Не подписывает в системе</td>
+        <td>-</td>
+      </tr>
+    <% end %>
+    <% @signatures.each do |signature| %>
+      <tr>
+        <td><%= signature.user&.name || 'Неизвестен' %></td>
+        <td>
+          <% if signature.status == 'signed' %>
+            <span style="color: green;">Подписал</span>
+          <% elsif signature.requested? %>
+            <span style="color: #856404;">Ожидает подписи</span>
+          <% else %>
+            <span style="color: #999;">Подпись не запрошена</span>
+          <% end %>
+        </td>
+        <td><%= signature.signed_at ? format_time(signature.signed_at) : '-' %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<div style="margin-top: 20px; display: flex; gap: 10px;">
+  <% my_signature = @signatures.find { |s| s.user_id == User.current.id && s.requested && s.status == 'pending' } %>
+  <% if my_signature %>
+    <%= link_to 'Подписать', sign_period_act_path(id: @act.id, project_id: @project.id), method: :put,
+          class: 'btn btn-primary',
+          data: { confirm: 'Подписать акт простой электронной подписью?' } %>
+  <% end %>
+
+  <% if @act.signed? %>
+    <%= link_to 'Скачать PDF', download_pdf_period_act_path(id: @act.id, project_id: @project.id), class: 'btn btn-primary' %>
+  <% end %>
+
+  <%= link_to 'Назад', period_acts_index_path(project_id: @project.id), class: 'btn btn-secondary' %>
+</div>

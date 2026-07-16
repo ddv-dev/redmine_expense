@@ -35,7 +35,8 @@ class ExpenseHistory < ActiveRecord::Base
       margin: { top: 15, bottom: 50, left: 15, right: 15 },
       footer: { content: footer_html, spacing: 0 }
     }
-    pdf_options[:exe_path] = self.class.wkhtmltopdf_exe_path if self.class.wkhtmltopdf_exe_path
+    exe_path = RedmineExpense::PdfGeneration.wkhtmltopdf_exe_path
+    pdf_options[:exe_path] = exe_path if exe_path
     pdf_data = WickedPdf.new.pdf_from_string(html, **pdf_options)
 
     dir = Rails.root.join('files', 'redmine_expense')
@@ -49,40 +50,5 @@ class ExpenseHistory < ActiveRecord::Base
   rescue => e
     Rails.logger.error "[redmine_expense] Ошибка генерации PDF для списания ##{id}: #{e.message}"
     nil
-  end
-
-  # wicked_pdf по умолчанию ищет бинарник по фиксированному пути
-  # /usr/local/bin/wkhtmltopdf. Порядок поиска:
-  # 1. Явно заданный путь через ENV['WKHTMLTOPDF_PATH'] или
-  #    Setting.plugin_redmine_expense['wkhtmltopdf_path'] — на случай, если
-  #    гем wkhtmltopdf-binary не поддерживает текущую ОС (его "бинарник" —
-  #    это Ruby-скрипт, который сам проверяет версию ОС и отказывается
-  #    запускаться, если под нее нет собранного пакета) и нужно указать
-  #    системно установленный wkhtmltopdf вручную.
-  # 2. Бинарник внутри самого гема wkhtmltopdf-binary.
-  # 3. Что найдется в PATH.
-  def self.wkhtmltopdf_exe_path
-    return @wkhtmltopdf_exe_path if defined?(@wkhtmltopdf_exe_path)
-
-    path = ENV['WKHTMLTOPDF_PATH'].presence
-    path ||= Setting.plugin_redmine_expense['wkhtmltopdf_path'].presence
-
-    if path.blank? && (spec = Gem.loaded_specs['wkhtmltopdf-binary'])
-      path = Dir.glob(File.join(spec.gem_dir, '**', 'wkhtmltopdf')).find do |f|
-        File.file?(f) && File.executable?(f)
-      end
-    end
-
-    if path.blank?
-      found = `which wkhtmltopdf 2>/dev/null`.strip
-      path = found if found.present?
-    end
-
-    if path.blank?
-      Rails.logger.error '[redmine_expense] Бинарник wkhtmltopdf не найден. Установите системный пакет (apt install wkhtmltopdf) ' \
-                          'или укажите путь явно через переменную окружения WKHTMLTOPDF_PATH.'
-    end
-
-    @wkhtmltopdf_exe_path = path
   end
 end

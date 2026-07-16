@@ -6,6 +6,8 @@ class ExpenseProjectSettingsController < ApplicationController
     setting = ExpenseProjectSetting.for_project(@project)
     setting.manager_id_list = params[:manager_ids]
     setting.contributor_id_list = params[:contributor_ids]
+    setting.committee_id_list = params[:committee_ids]
+    setting.chairman_id = params[:chairman_id].presence
 
     if setting.save
       flash[:notice] = 'Настройки доступа к "Расход" сохранены'

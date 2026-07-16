@@ -76,12 +76,6 @@ $(document).ready(function() {
           '<input type="hidden" name="expense[material_type][]" class="expense-type-value">' +
           '<ul class="expense-type-suggestions expense-suggestions"></ul>' +
         '</div>' +
-        '<div class="expense-autocomplete-wrap">' +
-          '<input type="text" class="expense-brand-input" placeholder="Начните вводить наименование поставщика" autocomplete="off" disabled>' +
-          '<input type="hidden" name="expense[brand][]" class="expense-brand-value">' +
-          '<ul class="expense-brand-suggestions expense-suggestions"></ul>' +
-        '</div>' +
-        '<select name="expense[model][]" class="expense-model-select" disabled><option value="">Выберите модификацию</option></select>' +
         '<input type="text" name="expense[quantity][]" value="' + (quantity || '') + '" placeholder="Кол-во" class="expense-quantity-input">' +
         '<span class="stock-info">Доступно: ?</span>' +
         '<a href="#" class="remove-expense-material" title="Удалить">&#10005;</a>' +
@@ -122,7 +116,7 @@ $(document).ready(function() {
         if (material) {
           row.find('.expense-type-input').val(material.material_type);
           row.find('.expense-type-value').val(material.material_type);
-          loadBrandsForRow(row, material, issueId);
+          checkStock(row, issueId);
         }
       });
     });
@@ -151,54 +145,38 @@ $(document).ready(function() {
     });
   }
 
-  // Загружает полный список брендов/наименований для выбранного типа один раз
-  // и кэширует его на строке — дальше поиск при вводе идёт по кэшу, без
-  // повторных запросов на каждое нажатие клавиши.
-  function loadBrandsForRow(row, material, issueId) {
-    var brandInput = row.find('.expense-brand-input');
-    var brandValue = row.find('.expense-brand-value');
+  // Наименование поставщика и модификация больше не выбираются вручную —
+  // для выбранной номенклатуры всегда берется первая заведенная на складе
+  // проекта позиция (server: MaterialStock.order(:id).first).
+  function resolveStock(row, issueId) {
     var materialType = row.find('.expense-type-value').val();
-
-    row.data('brandOptions', []);
-    brandInput.prop('disabled', true).val('');
-    brandValue.val('');
-    hideSuggestions(row, 'brand');
-    resetModelSelect(row);
+    resetStock(row);
 
     if (!materialType) return;
 
     $.ajax({
-      url: expenseBase + '/brands',
+      url: expenseBase + '/resolve_stock',
       method: 'GET',
       data: { material_type: materialType },
       dataType: 'json',
       success: function(data) {
-        row.data('brandOptions', data || []);
-        brandInput.prop('disabled', false);
-
-        if (material && material.brand) {
-          brandInput.val(material.brand);
-          brandValue.val(material.brand);
-          loadModelsForRow(row, material, issueId);
+        if (!data || !data.id) {
+          row.find('.stock-info').html('<span class="stock-danger">Материал не найден на складе</span>');
+          return;
         }
+        row.find('.expense-material-stock-id').val(data.id);
+        checkStock(row, issueId);
       },
       error: function(xhr) {
-        log('brands FAILED, status =', xhr.status, xhr.responseText);
+        log('resolve_stock FAILED, status =', xhr.status, xhr.responseText);
+        row.find('.stock-info').html('<span class="stock-danger">Материал не найден на складе</span>');
       }
     });
   }
 
-  function resetModelSelect(row) {
-    row.find('.expense-model-select').prop('disabled', true).val('').find('option:not(:first)').remove();
+  function resetStock(row) {
     row.find('.expense-material-stock-id').val('');
     row.find('.stock-info').text('Доступно: ?');
-  }
-
-  function resetBrand(row) {
-    row.find('.expense-brand-input').val('').prop('disabled', true);
-    row.find('.expense-brand-value').val('');
-    row.data('brandOptions', []);
-    hideSuggestions(row, 'brand');
   }
 
   function hideSuggestions(row, field) {
@@ -219,7 +197,7 @@ $(document).ready(function() {
       return;
     }
 
-    matches.slice(0, 50).forEach(function(item) {
+    matches.forEach(function(item) {
       var li = $('<li></li>').text(item.name).attr('data-value', item.id);
       suggestionsEl.append(li);
     });
@@ -230,86 +208,25 @@ $(document).ready(function() {
     renderSuggestionList(row.find('.expense-type-suggestions'), typesCache || [], query);
   }
 
-  function renderBrandSuggestions(row, query) {
-    renderSuggestionList(row.find('.expense-brand-suggestions'), row.data('brandOptions') || [], query);
-  }
-
   function selectType(row, value, issueId) {
     row.find('.expense-type-input').val(value);
     row.find('.expense-type-value').val(value);
     hideSuggestions(row, 'type');
-    resetBrand(row);
-    resetModelSelect(row);
-    loadBrandsForRow(row, null, issueId);
-  }
-
-  function selectBrand(row, value, issueId) {
-    row.find('.expense-brand-input').val(value);
-    row.find('.expense-brand-value').val(value);
-    hideSuggestions(row, 'brand');
-    resetModelSelect(row);
-    loadModelsForRow(row, null, issueId);
-  }
-
-  // Переносит реальный первичный ключ MaterialStock (data-stock-id у выбранного
-  // <option>) в скрытое поле — дальше все запросы по этой строке (остаток,
-  // сохранение) идут по ID, а не по тексту тип+бренд+модель.
-  function syncMaterialStockId(row) {
-    var selected = row.find('.expense-model-select option:selected');
-    var stockId = selected.attr('data-stock-id') || '';
-    row.find('.expense-material-stock-id').val(stockId);
-    return stockId;
-  }
-
-  function loadModelsForRow(row, material, issueId) {
-    var modelSelect = row.find('.expense-model-select');
-    var materialType = row.find('.expense-type-value').val();
-    var brand = row.find('.expense-brand-value').val();
-    if (!materialType || !brand) return;
-
-    modelSelect.prop('disabled', true).find('option:not(:first)').remove();
-
-    $.ajax({
-      url: expenseBase + '/models',
-      method: 'GET',
-      data: { material_type: materialType, brand: brand },
-      dataType: 'json',
-      success: function(data) {
-        modelSelect.prop('disabled', false);
-        $.each(data, function(i, model) {
-          modelSelect.append('<option value="' + model.name + '" data-stock-id="' + model.id + '">' + model.name + '</option>');
-        });
-        if (material && material.model) {
-          modelSelect.val(material.model);
-          if (material.material_stock_id) {
-            row.find('.expense-material-stock-id').val(material.material_stock_id);
-          } else {
-            syncMaterialStockId(row);
-          }
-          checkStock(row, issueId);
-        }
-      },
-      error: function(xhr) {
-        log('models FAILED, status =', xhr.status, xhr.responseText);
-      }
-    });
+    resolveStock(row, issueId);
   }
 
   function checkStock(row, issueId) {
     var materialType = row.find('.expense-type-value').val();
-    var brand = row.find('.expense-brand-value').val();
-    var model = row.find('.expense-model-select').val();
     var materialStockId = row.find('.expense-material-stock-id').val();
     var stockInfo = row.find('.stock-info');
     var quantityInput = row.find('.expense-quantity-input');
 
-    if (!materialType || !brand || !model) {
+    if (!materialType || !materialStockId) {
       stockInfo.text('Доступно: ?');
       return;
     }
 
-    var params = { material_type: materialType, brand: brand, model: model };
-    if (materialStockId) params.material_stock_id = materialStockId;
+    var params = { material_type: materialType, material_stock_id: materialStockId };
     if (issueId) params.issue_id = issueId;
 
     $.ajax({
@@ -351,8 +268,7 @@ $(document).ready(function() {
   $(document).on('input', '.expense-type-input', function() {
     var row = $(this).closest('.expense-material-row');
     row.find('.expense-type-value').val('');
-    resetBrand(row);
-    resetModelSelect(row);
+    resetStock(row);
     renderTypeSuggestions(row, $(this).val());
   });
 
@@ -373,45 +289,6 @@ $(document).ready(function() {
   $(document).on('blur', '.expense-type-input', function() {
     var row = $(this).closest('.expense-material-row');
     setTimeout(function() { hideSuggestions(row, 'type'); }, 150);
-  });
-
-  // --- Бренд/наименование: живой поиск по списку, загруженному для типа ---
-
-  // Живой поиск: фильтруем закэшированный список брендов/наименований
-  // при каждом вводе символа. Любое ручное изменение текста сбрасывает
-  // ранее выбранное значение — пока пользователь не кликнет по подсказке,
-  // строка считается незаполненной.
-  $(document).on('input', '.expense-brand-input', function() {
-    var row = $(this).closest('.expense-material-row');
-    row.find('.expense-brand-value').val('');
-    resetModelSelect(row);
-    renderBrandSuggestions(row, $(this).val());
-  });
-
-  $(document).on('focus', '.expense-brand-input', function() {
-    var row = $(this).closest('.expense-material-row');
-    if (!$(this).prop('disabled')) {
-      renderBrandSuggestions(row, $(this).val());
-    }
-  });
-
-  // mousedown, а не click — чтобы подсказка успела выбраться раньше,
-  // чем blur инпута скроет список подсказок.
-  $(document).on('mousedown', '.expense-brand-suggestions li[data-value]', function(e) {
-    e.preventDefault();
-    var row = $(this).closest('.expense-material-row');
-    selectBrand(row, $(this).attr('data-value'), issueId);
-  });
-
-  $(document).on('blur', '.expense-brand-input', function() {
-    var row = $(this).closest('.expense-material-row');
-    setTimeout(function() { hideSuggestions(row, 'brand'); }, 150);
-  });
-
-  $(document).on('change', '.expense-model-select', function() {
-    var row = $(this).closest('.expense-material-row');
-    syncMaterialStockId(row);
-    checkStock(row, issueId);
   });
 
   $(document).on('input', '.expense-quantity-input', function() {
@@ -456,14 +333,11 @@ $(document).ready(function() {
       var row = $(this);
       var typeTyped = row.find('.expense-type-input').val();
       var materialType = row.find('.expense-type-value').val();
-      var brandTyped = row.find('.expense-brand-input').val();
-      var brand = row.find('.expense-brand-value').val();
-      var model = row.find('.expense-model-select').val();
       var materialStockId = row.find('.expense-material-stock-id').val();
       var quantity = row.find('.expense-quantity-input').val();
       var id = row.find('input[name="expense[id][]"]').val();
 
-      if (!typeTyped && !brandTyped && !model && !quantity) return; // пустая строка
+      if (!typeTyped && !quantity) return; // пустая строка
 
       if (typeTyped && !materialType) {
         hasErrors = true;
@@ -471,15 +345,9 @@ $(document).ready(function() {
         return false;
       }
 
-      if (brandTyped && !brand) {
+      if (!materialType || !materialStockId || !quantity) {
         hasErrors = true;
-        alert('Выберите наименование поставщика из выпадающего списка подсказок, а не просто впишите текст.');
-        return false;
-      }
-
-      if (!materialType || !brand || !model || !quantity) {
-        hasErrors = true;
-        alert('Заполните номенклатуру, наименование поставщика, модификацию и количество материала во всех строках.');
+        alert('Заполните номенклатуру и количество материала во всех строках.');
         return false;
       }
 
@@ -496,15 +364,13 @@ $(document).ready(function() {
         var available = parseFloat(match[1]);
         if (quantityNum > available) {
           hasErrors = true;
-          alert('Недостаточно материала "' + brand + ' ' + model + '".\nДоступно: ' + available + ', запрошено: ' + quantityNum);
+          alert('Недостаточно материала "' + materialType + '".\nДоступно: ' + available + ', запрошено: ' + quantityNum);
           return false;
         }
       }
 
       materials.push({
         material_type: materialType,
-        brand: brand,
-        model: model,
         material_stock_id: materialStockId,
         quantity: quantity,
         id: id

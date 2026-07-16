@@ -6,8 +6,7 @@ Rails.application.routes.draw do
 
     # API для формы задачи
     get '/expense/materials', to: 'expense#materials'
-    get '/expense/brands', to: 'expense#brands'
-    get '/expense/models', to: 'expense#models'
+    get '/expense/resolve_stock', to: 'expense#resolve_stock'
     get '/expense/issue_materials', to: 'expense#issue_materials'
     get '/expense/stock_quantity', to: 'expense#stock_quantity'
     post '/expense/save', to: 'expense#save'
@@ -30,6 +29,14 @@ Rails.application.routes.draw do
     get '/history', to: 'history#index', as: 'history_index'
     get '/history/:id', to: 'history#show', as: 'history_show'
     get '/history/:id/download_pdf', to: 'history#download_pdf', as: 'download_pdf_history'
+    post '/history/generate_act', to: 'period_acts#create', as: 'generate_period_act'
+
+    # Период-акты (подписание комиссией)
+    get '/period_acts', to: 'period_acts#index', as: 'period_acts_index'
+    get '/period_acts/signed', to: 'period_acts#signed', as: 'signed_period_acts'
+    get '/period_acts/:id', to: 'period_acts#show', as: 'period_act_show'
+    put '/period_acts/:id/sign', to: 'period_acts#sign', as: 'sign_period_act'
+    get '/period_acts/:id/download_pdf', to: 'period_acts#download_pdf', as: 'download_pdf_period_act'
 
     # Промежуточная таблица
     get '/intermediate', to: 'intermediate#index', as: 'intermediate_index'

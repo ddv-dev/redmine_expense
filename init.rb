@@ -26,11 +26,12 @@ Redmine::Plugin.register :redmine_expense do
   # а не роли/права Redmine.
   project_module :expense do
     permission :view_expense, {
-      expense: [:index, :materials, :brands, :models, :issue_materials, :stock_quantity, :save, :clear_stock, :clean_pdfs],
+      expense: [:index, :materials, :resolve_stock, :issue_materials, :stock_quantity, :save, :clear_stock, :clean_pdfs],
       stock: [:index, :edit, :update, :export],
       history: [:index, :show, :download_pdf],
       intermediate: [:index, :approve, :reject],
-      import: [:new, :preview, :confirm]
+      import: [:new, :preview, :confirm],
+      period_acts: [:create, :index, :show, :signed, :sign, :download_pdf]
     }, public: true, require: :loggedin
   end
 
@@ -40,12 +41,14 @@ Redmine::Plugin.register :redmine_expense do
      if: Proc.new { |project|
        User.current.admin? ||
        User.current.allowed_to?(:edit_project, project) ||
-       RedmineExpense::Access.manager?(User.current, project)
+       RedmineExpense::Access.manager?(User.current, project) ||
+       RedmineExpense::Access.committee_member?(User.current, project)
      }
 end
 
 require File.expand_path('issue_edit_hook', __dir__)
 require_relative 'lib/redmine_expense/access'
+require_relative 'lib/redmine_expense/pdf_generation'
 
 # Хук для подключения JavaScript и CSS.
 # Redmine::Hook::ViewListener регистрирует свои подклассы автоматически при
