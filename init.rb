@@ -33,7 +33,11 @@ Redmine::Plugin.register :redmine_expense do
   menu :project_menu, :expense, {
     controller: 'expense', action: 'index'
   }, caption: 'Расход', param: :project_id,
-     if: Proc.new { |project| User.current.admin? || User.current.allowed_to?(:edit_project, project) }
+     if: Proc.new { |project|
+       User.current.admin? ||
+       User.current.allowed_to?(:edit_project, project) ||
+       RedmineExpense::Access.manager?(User.current, project)
+     }
 end
 
 require File.expand_path('issue_edit_hook', __dir__)
