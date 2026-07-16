@@ -16,10 +16,14 @@ Redmine::Plugin.register :redmine_expense do
   }, partial: 'settings/expense_settings'
 
   # Включается/выключается для проекта на вкладке "Настройки" -> "Модули",
-  # как любой другой модуль Redmine. Право require: :loggedin означает, что
-  # оно не завязано на роли — доступ внутри включенного модуля дальше решает
-  # RedmineExpense::Access (менеджеры/контрибьюторы, назначенные per-project
-  # на вкладке "Расход" в настройках проекта), а не роли/права Redmine.
+  # как любой другой модуль Redmine. public: true означает, что право не
+  # нужно вручную включать галочкой для каждой роли в Administration ->
+  # Roles and permissions (require: :loggedin само по себе для этого не
+  # достаточно — оно лишь снимает требование членства в проекте, а не
+  # необходимость роли иметь это право). Доступ внутри включенного модуля
+  # дальше решает RedmineExpense::Access (менеджеры/контрибьюторы,
+  # назначенные per-project на вкладке "Расход" в настройках проекта),
+  # а не роли/права Redmine.
   project_module :expense do
     permission :view_expense, {
       expense: [:index, :materials, :brands, :models, :issue_materials, :stock_quantity, :save, :clear_stock, :clean_pdfs],
@@ -27,7 +31,7 @@ Redmine::Plugin.register :redmine_expense do
       history: [:index, :show, :download_pdf],
       intermediate: [:index, :approve, :reject],
       import: [:new, :preview, :confirm]
-    }, require: :loggedin
+    }, public: true, require: :loggedin
   end
 
   menu :project_menu, :expense, {
