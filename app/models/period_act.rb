@@ -64,24 +64,29 @@ class PeriodAct < ApplicationRecord
   end
 
   def generate_pdf!
+    ordered_signatures = period_act_signatures.includes(:user).order(:id)
     render_locals = {
       act: self,
       project: project,
       grouped_materials: grouped_materials,
       chairman: chairman,
-      signatures: period_act_signatures.includes(:user).order(:id)
+      signatures: ordered_signatures
     }
 
     html = ApplicationController.render(template: 'expense_pdf/period_act', layout: false, locals: render_locals)
+    footer_html = ApplicationController.render(template: 'expense_pdf/period_act_footer', layout: false, locals: render_locals)
 
     pdf_options = {
       encoding: 'UTF-8',
-      # 2 см снизу, 3 см слева, 1.5 см справа — как в исходном образце акта.
-      # Блок подписей прижимается к нижнему краю через flex-верстку в самом
-      # шаблоне (margin-top: auto), а не через footer-область wkhtmltopdf —
-      # footer повторялся бы на каждой странице, что не годится, если
-      # таблица материалов сама по себе займет больше одной страницы.
-      margin: { top: 15, bottom: 20, left: 30, right: 15 }
+      # 3 см слева, 1.5 см справа — как в исходном образце акта. Блок
+      # подписей прижимается к нижнему краю (2 см от него) через footer-
+      # область wkhtmltopdf — тот же проверенный прием, что и в
+      # ExpenseHistory#generate_pdf!, только высота footer'а здесь
+      # считается динамически под фактическое число членов комиссии
+      # (flex/margin-top:auto внутри обычного контента body в wkhtmltopdf
+      # не сработал — блок подписей просто оставался сразу под таблицей).
+      margin: { top: 15, bottom: footer_height_mm(ordered_signatures), left: 30, right: 15 },
+      footer: { content: footer_html, spacing: 0 }
     }
     exe_path = RedmineExpense::PdfGeneration.wkhtmltopdf_exe_path
     pdf_options[:exe_path] = exe_path if exe_path
@@ -98,5 +103,21 @@ class PeriodAct < ApplicationRecord
   rescue => e
     Rails.logger.error "[redmine_expense] Ошибка генерации PDF периодического акта ##{id}: #{e.message}"
     nil
+  end
+
+  private
+
+  # Высота footer-области (мм) под конкретное число членов комиссии: 2 см
+  # отступ от нижнего края страницы + строка председателя + по строке/штампу
+  # на каждого члена комиссии (подписанный штамп визуально выше пустой
+  # строки без подписи).
+  def footer_height_mm(ordered_signatures)
+    height = 20 # отступ от нижнего края страницы
+    height += 14 if chairman
+    height += 14 # заголовок "Члены комиссии"
+    ordered_signatures.each do |signature|
+      height += signature.status == 'signed' ? 24 : 14
+    end
+    [height, 40].max
   end
 end

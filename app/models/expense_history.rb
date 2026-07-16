@@ -19,7 +19,7 @@ class ExpenseHistory < ActiveRecord::Base
       issue: issue,
       history: self,
       accepted_by: issue&.author,
-      accepted_at: issue&.created_on,
+      accepted_at: closed_at,
       issued_by: user,
       issued_at: closed_at
     }
