@@ -40,6 +40,7 @@ Rails.application.routes.draw do
 
     # Промежуточная таблица
     get '/intermediate', to: 'intermediate#index', as: 'intermediate_index'
+    post '/intermediate', to: 'intermediate#create', as: 'create_intermediate'
     put '/intermediate/:id/approve', to: 'intermediate#approve', as: 'approve_intermediate'
     put '/intermediate/:id/reject', to: 'intermediate#reject', as: 'reject_intermediate'
 

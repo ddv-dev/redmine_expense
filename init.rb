@@ -29,7 +29,7 @@ Redmine::Plugin.register :redmine_expense do
       expense: [:index, :materials, :resolve_stock, :issue_materials, :stock_quantity, :save, :clear_stock, :clean_pdfs],
       stock: [:index, :edit, :update, :export],
       history: [:index, :show, :download_pdf],
-      intermediate: [:index, :approve, :reject],
+      intermediate: [:index, :create, :approve, :reject],
       import: [:new, :preview, :confirm],
       period_acts: [:create, :index, :show, :signed, :sign, :download_pdf]
     }, public: true, require: :loggedin

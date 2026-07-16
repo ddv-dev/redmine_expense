@@ -5,7 +5,14 @@ class ExpenseController < ApplicationController
   before_action :find_issue, only: [:issue_materials, :stock_quantity, :save]
 
   def index
-    return unless require_expense_manager
+    unless expense_manager?
+      # Комиссия/председатель видят вкладку "Расход" в проекте (чтобы дойти
+      # до подписания), но сам дашборд — только для менеджеров плагина.
+      # Не 403, а сразу туда, куда им действительно нужно.
+      return redirect_to(period_acts_index_path(project_id: @project.id)) if committee_member?
+
+      return require_expense_manager
+    end
 
     @total_materials = project_materials.count
     @pending_expenses = project_intermediates.pending.count

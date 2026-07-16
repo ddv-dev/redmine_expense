@@ -1,6 +1,14 @@
+<% manual_add_material_types = MaterialStock.where(project_id: @project.id).distinct.order(:material_type).pluck(:material_type) %>
+
 <h2>Ожидают подтверждения</h2>
 
 <%= render 'shared/expense_menu' %>
+
+<% if expense_manager? %>
+  <div style="margin-bottom: 20px;">
+    <button type="button" id="manual-add-btn" class="btn btn-primary">+ Добавить материал вручную</button>
+  </div>
+<% end %>
 
 <% if @intermediates.any? %>
   <table class="list">
@@ -34,9 +42,13 @@
           <td><%= item.status %></td>
           <td>
             <% if item.pending? && expense_manager? %>
-              <%= link_to 'Подтвердить', approve_intermediate_path(id: item.id, project_id: @project.id), method: :put,
-                      data: { confirm: 'Подтвердить списание?' },
-                      style: 'padding: 2px 8px; color: green; text-decoration: none;' %>
+              <%= form_tag approve_intermediate_path(id: item.id, project_id: @project.id), method: :put,
+                    style: 'display: inline-flex; gap: 4px; align-items: center; margin-right: 8px;' do %>
+                <%= date_field_tag :closed_at, Date.current, id: "closed_at_#{item.id}", style: 'width: 135px; height: 26px; font-size: 12px;' %>
+                <%= submit_tag 'Подтвердить',
+                      data: { confirm: 'Подтвердить списание указанной датой?' },
+                      style: 'padding: 2px 8px; color: green; background: none; border: 1px solid green; border-radius: 3px; cursor: pointer;' %>
+              <% end %>
               <%= link_to 'Отклонить', reject_intermediate_path(id: item.id, project_id: @project.id), method: :put,
                       data: { confirm: 'Отклонить списание?' },
                       style: 'padding: 2px 8px; color: red; text-decoration: none;' %>
@@ -52,4 +64,42 @@
   <%= pagination_links_full @intermediate_pages, @intermediate_count %>
 <% else %>
   <p class="nodata">Нет записей, ожидающих подтверждения</p>
+<% end %>
+
+<% if expense_manager? %>
+  <div id="manual-add-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="background:white; max-width:420px; margin:80px auto; padding:20px; border-radius:8px;">
+      <h3>Добавить материал вручную</h3>
+      <%= form_tag create_intermediate_path(project_id: @project.id), method: :post do %>
+        <p>
+          <label>Номер задачи (без #)</label><br>
+          <%= text_field_tag :issue_id, nil, style: 'width:100%;', placeholder: 'Например, 15107' %>
+        </p>
+        <p>
+          <label>Номенклатура</label><br>
+          <%= select_tag :material_type, options_for_select(manual_add_material_types), include_blank: '-- Выберите --', style: 'width:100%;' %>
+        </p>
+        <p>
+          <label>Количество</label><br>
+          <%= text_field_tag :quantity, nil, style: 'width:100%;' %>
+        </p>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" id="manual-add-cancel" class="btn btn-secondary">Отмена</button>
+          <%= submit_tag 'Добавить', class: 'btn btn-primary' %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('manual-add-modal');
+    document.getElementById('manual-add-btn').addEventListener('click', function() {
+      modal.style.display = 'block';
+    });
+    document.getElementById('manual-add-cancel').addEventListener('click', function() {
+      modal.style.display = 'none';
+    });
+  });
+  </script>
 <% end %>
