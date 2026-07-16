@@ -18,7 +18,7 @@
     <p><%= issue.subject %></p>
     <p>Проект: <%= issue.project&.name %></p>
     <p>Автор: <%= issue.author&.name %></p>
-    <p>Дата формирования: <%= format_date(history.closed_at) %></p>
+    <p>Дата формирования: <%= RedmineExpense::RussianDate.short(history.closed_at) %></p>
   </div>
 
   <table class="materials">

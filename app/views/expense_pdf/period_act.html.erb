@@ -12,7 +12,7 @@
   table.materials th { background: #f0f0f0; }
   table.materials td.num { text-align: center; width: 40px; }
   table.materials td.qty { text-align: right; width: 90px; }
-  .total { font-weight: bold; margin: 10px 0 0; }
+  table.materials tr.total-row td { font-weight: bold; }
 </style>
 </head>
 <body>
@@ -20,7 +20,7 @@
   <p class="act-date"><%= RedmineExpense::RussianDate.format(Date.current) %></p>
 
   <div class="meta">
-    <p>Списаны расходные материалы в рамках проекта «<%= project&.name %>» за период с <%= format_date(act.start_date) %> по <%= format_date(act.end_date) %>.</p>
+    <p>Списаны расходные материалы в рамках проекта «<%= project&.name %>» за период с <%= RedmineExpense::RussianDate.short(act.start_date) %> по <%= RedmineExpense::RussianDate.short(act.end_date) %>.</p>
   </div>
 
   <table class="materials">
@@ -39,9 +39,11 @@
           <td class="qty"><%= item[:quantity] %></td>
         </tr>
       <% end %>
+      <tr class="total-row">
+        <td colspan="2">Итого</td>
+        <td class="qty"><%= grouped_materials.sum { |i| i[:quantity] } %> шт.</td>
+      </tr>
     </tbody>
   </table>
-
-  <p class="total">Итого: <%= grouped_materials.sum { |i| i[:quantity] } %> шт.</p>
 </body>
 </html>

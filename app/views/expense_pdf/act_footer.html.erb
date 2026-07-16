@@ -42,7 +42,7 @@
             <p>Информация о владельце:</p>
             <p>ФИО: <%= accepted_by&.name %></p>
             <p>Логин: <%= accepted_by&.login %></p>
-            <p>Дата подписания: <%= accepted_at ? format_time(accepted_at) : '-' %></p>
+            <p>Дата подписания: <%= accepted_at ? RedmineExpense::RussianDate.short(accepted_at) : '-' %></p>
           </div>
         </td>
         <td>
@@ -52,7 +52,7 @@
             <p>Информация о владельце:</p>
             <p>ФИО: <%= issued_by&.name %></p>
             <p>Логин: <%= issued_by&.login %></p>
-            <p>Дата подписания: <%= issued_at ? format_time(issued_at) : '-' %></p>
+            <p>Дата подписания: <%= issued_at ? RedmineExpense::RussianDate.short(issued_at) : '-' %></p>
           </div>
         </td>
       </tr>

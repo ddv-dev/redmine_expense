@@ -48,7 +48,7 @@
           <p>Документ подписан простой электронной подписью</p>
           <p>ФИО: <%= signature.user&.name %></p>
           <p>Логин: <%= signature.user&.login %></p>
-          <p>Дата подписания: <%= signature.signed_at ? format_time(signature.signed_at) : '-' %></p>
+          <p>Дата подписания: <%= signature.signed_at ? RedmineExpense::RussianDate.short(signature.signed_at) : '-' %></p>
         </div>
       <% else %>
         <div class="sig-plain">
