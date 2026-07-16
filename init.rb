@@ -39,26 +39,19 @@ end
 require File.expand_path('issue_edit_hook', __dir__)
 require_relative 'lib/redmine_expense/access'
 
-# Хук для подключения JavaScript и CSS, и для добавления вкладки "Расход"
-# на страницу настроек проекта.
+# Хук для подключения JavaScript и CSS.
 # Redmine::Hook::ViewListener регистрирует свои подклассы автоматически при
 # наследовании — явный Redmine::Hook.add_listener здесь был лишним и приводил
 # к двойному подключению expense_fields.js/expense.css на каждой странице.
+#
+# Вкладка "Расход" в настройках проекта добавляется через
+# lib/redmine_expense/projects_helper_patch.rb (патч ProjectsHelper) —
+# хук controller_projects_settings_before_render в этой версии Redmine
+# не вызывается, поэтому вкладка через него не появлялась.
 class ExpenseViewHook < Redmine::Hook::ViewListener
   def view_layouts_base_html_head(context)
     javascript_include_tag('expense_fields.js', plugin: 'redmine_expense') +
       stylesheet_link_tag('expense.css', plugin: 'redmine_expense')
-  end
-
-  def controller_projects_settings_before_render(context = {})
-    project = context[:project]
-    return unless project&.module_enabled?('expense')
-
-    context[:tabs] << {
-      name: 'expense',
-      partial: 'redmine_expense/expense_project_settings/tab',
-      label: :label_expense
-    }
   end
 end
 
