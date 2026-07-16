@@ -49,6 +49,7 @@ end
 require File.expand_path('issue_edit_hook', __dir__)
 require_relative 'lib/redmine_expense/access'
 require_relative 'lib/redmine_expense/pdf_generation'
+require_relative 'lib/redmine_expense/russian_date'
 
 # Хук для подключения JavaScript и CSS.
 # Redmine::Hook::ViewListener регистрирует свои подклассы автоматически при

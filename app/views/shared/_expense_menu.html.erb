@@ -1,8 +1,10 @@
 <div style="display: flex; gap: 10px; margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; flex-wrap: wrap; align-items: center;">
   <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-    <%= link_to 'Главная', expense_index_path(project_id: @project.id),
-        class: 'btn btn-primary',
-        style: "padding: 8px 20px; background: #{current_page?(expense_index_path(project_id: @project.id)) ? '#3e5b76' : '#6c757d'}; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;" %>
+    <% if expense_manager? %>
+      <%= link_to 'Главная', expense_index_path(project_id: @project.id),
+          class: 'btn btn-primary',
+          style: "padding: 8px 20px; background: #{current_page?(expense_index_path(project_id: @project.id)) ? '#3e5b76' : '#6c757d'}; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;" %>
+    <% end %>
 
     <% if expense_manager? %>
       <%= link_to 'История списаний', history_index_path(project_id: @project.id),

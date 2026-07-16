@@ -76,7 +76,12 @@ class PeriodAct < ApplicationRecord
 
     pdf_options = {
       encoding: 'UTF-8',
-      margin: { top: 15, bottom: 15, left: 15, right: 15 }
+      # 2 см снизу, 3 см слева, 1.5 см справа — как в исходном образце акта.
+      # Блок подписей прижимается к нижнему краю через flex-верстку в самом
+      # шаблоне (margin-top: auto), а не через footer-область wkhtmltopdf —
+      # footer повторялся бы на каждой странице, что не годится, если
+      # таблица материалов сама по себе займет больше одной страницы.
+      margin: { top: 15, bottom: 20, left: 30, right: 15 }
     }
     exe_path = RedmineExpense::PdfGeneration.wkhtmltopdf_exe_path
     pdf_options[:exe_path] = exe_path if exe_path
