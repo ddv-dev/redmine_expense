@@ -1,21 +1,26 @@
 <%
   expense_settings = Setting.plugin_redmine_expense
   expense_tracker_ids = Array(expense_settings['tracker_ids']).map(&:to_s)
-  expense_status_in_progress = Array(expense_settings['status_in_progress']).map(&:to_s)
-  expense_status_resolved = Array(expense_settings['status_resolved']).map(&:to_s)
+
+  # Статусы, при которых доступен блок материалов. Fallback на пару старых
+  # настроек ("В работе"/"Решена") — чтобы после обновления плагина всё
+  # работало, пока админ не пересохранил настройки с новым мультивыбором.
+  expense_material_statuses = Array(expense_settings['material_statuses']).map(&:to_s).reject(&:blank?)
+  if expense_material_statuses.empty?
+    expense_material_statuses = [expense_settings['status_in_progress'], expense_settings['status_resolved']].map(&:to_s).reject(&:blank?)
+  end
 
   expense_module_enabled = issue.project&.module_enabled?('expense')
   expense_tracker_allowed = expense_tracker_ids.empty? || expense_tracker_ids.include?(issue.tracker_id.to_s)
   expense_enabled = issue.persisted? && expense_module_enabled && expense_tracker_allowed &&
-                    expense_status_in_progress.any? && expense_status_resolved.any? &&
+                    expense_material_statuses.any? &&
                     RedmineExpense::Access.contributor?(User.current, issue.project)
 %>
 <% if expense_enabled %>
   <div id="expense-fields-root" data-issue-id="<%= issue.id %>"></div>
   <script>
     window.expenseSettings = {
-      statusInProgress: <%= expense_status_in_progress.to_json.html_safe %>,
-      statusResolved: <%= expense_status_resolved.to_json.html_safe %>
+      materialStatuses: <%= expense_material_statuses.to_json.html_safe %>
     };
     window.currentIssueId = <%= issue.id.to_json.html_safe %>;
     window.currentProjectId = <%= issue.project_id.to_json.html_safe %>;

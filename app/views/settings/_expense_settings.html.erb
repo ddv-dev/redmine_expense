@@ -100,35 +100,31 @@
   <span class="settings-hint">Выберите трекеры, для которых будет доступен функционал</span>
 </div>
 
-<!-- Статус "В работе" -->
+<!-- Статусы, при которых можно добавлять материалы -->
+<%
+  # Переезд со старой схемы: если новый мультивыбор еще не сохраняли,
+  # предзаполняем его прежними статусами "В работе"/"Решена".
+  material_statuses = Array(@settings['material_statuses']).map(&:to_s)
+  if material_statuses.empty?
+    material_statuses = [@settings['status_in_progress'], @settings['status_resolved']].map(&:to_s).reject(&:blank?)
+  end
+%>
 <div class="settings-section">
-  <span class="section-title">Статус "В работе"</span>
-  <div class="radio-group">
+  <span class="section-title">Статусы, при которых можно добавлять материалы к задаче</span>
+  <div class="checkbox-grid">
     <% IssueStatus.all.each do |status| %>
       <label>
-        <%= radio_button_tag 'settings[status_in_progress]', status.id, @settings['status_in_progress'].to_s == status.id.to_s %>
+        <%= check_box_tag 'settings[material_statuses][]', status.id, material_statuses.include?(status.id.to_s) %>
         <%= status.name %>
       </label>
     <% end %>
   </div>
-</div>
-
-<!-- Статус "Решена" -->
-<div class="settings-section">
-  <span class="section-title">Статус "Решена"</span>
-  <div class="radio-group">
-    <% IssueStatus.all.each do |status| %>
-      <label>
-        <%= radio_button_tag 'settings[status_resolved]', status.id, @settings['status_resolved'].to_s == status.id.to_s %>
-        <%= status.name %>
-      </label>
-    <% end %>
-  </div>
+  <span class="settings-hint">Блок "Расходные материалы" появится в форме редактирования задачи, когда задача находится в любом из отмеченных статусов</span>
 </div>
 
 <!-- Статус "Закрыта" -->
 <div class="settings-section">
-  <span class="section-title">Статус "Закрыта"</span>
+  <span class="section-title">Статус автоматического подтверждения списаний</span>
   <div class="radio-group">
     <% IssueStatus.all.each do |status| %>
       <label>
@@ -137,4 +133,5 @@
       </label>
     <% end %>
   </div>
+  <span class="settings-hint">При переводе задачи в этот статус все её ожидающие списания подтверждаются автоматически (списывается остаток, формируется PDF-акт)</span>
 </div>

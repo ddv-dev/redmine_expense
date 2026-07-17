@@ -5,9 +5,7 @@ $(document).ready(function() {
   var issueId = root.data('issue-id') || window.currentIssueId;
   var projectId = window.currentProjectId;
   var expenseBase = '/projects/' + projectId + '/expense';
-  var statusInProgress = (window.expenseSettings && window.expenseSettings.statusInProgress) || [];
-  var statusResolved = (window.expenseSettings && window.expenseSettings.statusResolved) || [];
-  var allStatuses = statusInProgress.concat(statusResolved).map(String);
+  var allStatuses = ((window.expenseSettings && window.expenseSettings.materialStatuses) || []).map(String);
 
   var typesCache = null; // общий для всех строк список типов материала
 

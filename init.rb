@@ -10,8 +10,7 @@ Redmine::Plugin.register :redmine_expense do
 
   settings default: {
     'tracker_ids' => [],
-    'status_in_progress' => [],
-    'status_resolved' => [],
+    'material_statuses' => [],
     'status_closed' => []
   }, partial: 'settings/expense_settings'
 
