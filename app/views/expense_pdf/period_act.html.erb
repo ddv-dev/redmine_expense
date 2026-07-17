@@ -75,7 +75,9 @@
       <% else %>
         <div class="sig-plain">
           <span class="sig-line"></span>
-          <span class="sig-name"><%= signature.user&.name %></span>
+          <span class="sig-name">
+            <%= signature.user&.name %><% if !signature.requested? && signature.skip_reason.present? %> — <%= signature.skip_reason %><% end %>
+          </span>
         </div>
       <% end %>
     <% end %>

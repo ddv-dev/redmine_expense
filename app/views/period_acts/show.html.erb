@@ -54,7 +54,7 @@
           <% elsif signature.requested? %>
             <span style="color: #856404;">Ожидает подписи</span>
           <% else %>
-            <span style="color: #999;">Подпись не запрошена</span>
+            <span style="color: #999;">Подпись не запрошена<% if signature.skip_reason.present? %> (<%= signature.skip_reason %>)<% end %></span>
           <% end %>
         </td>
         <td><%= signature.signed_at ? format_time(signature.signed_at) : '-' %></td>

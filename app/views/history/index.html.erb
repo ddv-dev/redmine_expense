@@ -116,11 +116,16 @@
           <p style="color:#666; font-size:13px;">Председатель: <%= act_chairman.name %> (числится в акте, подпись не запрашивается)</p>
         <% end %>
         <p style="font-size:13px;">Снимите галку у тех, чью подпись сейчас запрашивать не нужно (например, в отпуске) — в акте они всё равно будут числиться членами комиссии.</p>
-        <div style="max-height:220px; overflow-y:auto; border:1px solid #e5e5e5; border-radius:4px; padding:8px;">
+        <div style="max-height:260px; overflow-y:auto; border:1px solid #e5e5e5; border-radius:4px; padding:8px;">
           <% act_committee_users.each do |user| %>
-            <label style="display:block; padding:3px 0;">
-              <input type="checkbox" class="generate-act-signer" value="<%= user.id %>" checked> <%= user.name %>
-            </label>
+            <div class="generate-act-signer-row" style="padding:3px 0;">
+              <label style="display:block;">
+                <input type="checkbox" class="generate-act-signer" value="<%= user.id %>" checked> <%= user.name %>
+              </label>
+              <input type="text" class="generate-act-skip-reason" data-user-id="<%= user.id %>"
+                     placeholder="Причина, почему подпись не запрашивается (например, «В отпуске»)"
+                     style="display:none; width:100%; margin:4px 0 2px; box-sizing:border-box;">
+            </div>
           <% end %>
         </div>
       <% end %>
@@ -146,6 +151,24 @@
     var openBtn = document.getElementById('generate-act-btn');
     if (!openBtn) return;
 
+    function toggleReasonInput(checkbox) {
+      var row = checkbox.closest('.generate-act-signer-row');
+      if (!row) return;
+      var reasonInput = row.querySelector('.generate-act-skip-reason');
+      if (!reasonInput) return;
+      if (checkbox.checked) {
+        reasonInput.style.display = 'none';
+        reasonInput.value = '';
+      } else {
+        reasonInput.style.display = 'block';
+      }
+    }
+
+    document.querySelectorAll('.generate-act-signer').forEach(function(cb) {
+      toggleReasonInput(cb);
+      cb.addEventListener('change', function() { toggleReasonInput(cb); });
+    });
+
     openBtn.addEventListener('click', function() {
       var startDate = document.getElementById('start_date').value;
       var endDate = document.getElementById('end_date').value;
@@ -168,12 +191,25 @@
       submitBtn.addEventListener('click', function() {
         var container = document.getElementById('generate-act-signer-inputs');
         container.innerHTML = '';
-        document.querySelectorAll('.generate-act-signer:checked').forEach(function(cb) {
-          var input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = 'signer_ids[]';
-          input.value = cb.value;
-          container.appendChild(input);
+        document.querySelectorAll('.generate-act-signer').forEach(function(cb) {
+          if (cb.checked) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'signer_ids[]';
+            input.value = cb.value;
+            container.appendChild(input);
+          } else {
+            var row = cb.closest('.generate-act-signer-row');
+            var reasonInput = row ? row.querySelector('.generate-act-skip-reason') : null;
+            var reason = reasonInput ? reasonInput.value.trim() : '';
+            if (reason) {
+              var reasonHidden = document.createElement('input');
+              reasonHidden.type = 'hidden';
+              reasonHidden.name = 'skip_reasons[' + cb.value + ']';
+              reasonHidden.value = reason;
+              container.appendChild(reasonHidden);
+            }
+          }
         });
         document.getElementById('generate-act-form').submit();
       });

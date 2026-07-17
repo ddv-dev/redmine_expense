@@ -27,6 +27,7 @@ class PeriodActsController < ApplicationController
     end
 
     requested_ids = Array(params[:signer_ids]).map(&:to_s) & committee_ids
+    skip_reasons = (params[:skip_reasons] || {}).to_unsafe_h.transform_keys(&:to_s).transform_values { |v| v.to_s.strip }
 
     if requested_ids.empty?
       flash[:error] = 'Отметьте хотя бы одного члена комиссии, чья подпись запрашивается — иначе акт никто не сможет подписать'
@@ -56,10 +57,12 @@ class PeriodActsController < ApplicationController
       histories.each { |h| PeriodActItem.create!(period_act: act, expense_history: h) }
 
       committee_ids.each do |uid|
+        requested = requested_ids.include?(uid)
         PeriodActSignature.create!(
           period_act: act,
           user_id: uid,
-          requested: requested_ids.include?(uid)
+          requested: requested,
+          skip_reason: requested ? nil : skip_reasons[uid].presence
         )
       end
     end
