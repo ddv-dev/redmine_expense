@@ -86,14 +86,11 @@ git pull origin claude/redmine-expense-plugin-xxl1jz
 cd /var/www/redmine
 bundle install
 RAILS_ENV=production bundle exec rake redmine:plugins:migrate
+RAILS_ENV=production bundle exec rake assets:precompile
 touch tmp/restart.txt
 ```
 
-Если менялись файлы в `assets/` (JS/CSS плагина), дополнительно:
-
-```bash
-RAILS_ENV=production bundle exec rake assets:precompile
-```
+`assets:precompile` запускайте при КАЖДОМ обновлении — без него Redmine продолжит отдавать старые версии JS/CSS плагина, и страницы будут вести себя как до обновления (типичный симптом: серверная часть уже новая, а поведение форм в браузере — старое). После обновления также сделайте жесткое обновление страницы в браузере (Ctrl+Shift+R), чтобы сбросить кэш браузера.
 
 ## Настройка после установки
 

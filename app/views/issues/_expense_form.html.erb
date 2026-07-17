@@ -19,8 +19,13 @@
 <% if expense_enabled %>
   <div id="expense-fields-root" data-issue-id="<%= issue.id %>"></div>
   <script>
+    // statusInProgress/statusResolved — дубли для СТАРОГО закешированного
+    // expense_fields.js (он складывает эти два списка). Если ассеты не
+    // пересобрали/браузер держит старый скрипт, блок все равно работает.
     window.expenseSettings = {
-      materialStatuses: <%= expense_material_statuses.to_json.html_safe %>
+      materialStatuses: <%= expense_material_statuses.to_json.html_safe %>,
+      statusInProgress: <%= expense_material_statuses.to_json.html_safe %>,
+      statusResolved: []
     };
     window.currentIssueId = <%= issue.id.to_json.html_safe %>;
     window.currentProjectId = <%= issue.project_id.to_json.html_safe %>;

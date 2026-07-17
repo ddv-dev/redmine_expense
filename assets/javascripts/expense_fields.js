@@ -5,7 +5,11 @@ $(document).ready(function() {
   var issueId = root.data('issue-id') || window.currentIssueId;
   var projectId = window.currentProjectId;
   var expenseBase = '/projects/' + projectId + '/expense';
-  var allStatuses = ((window.expenseSettings && window.expenseSettings.materialStatuses) || []).map(String);
+  // materialStatuses — основной источник; statusInProgress/statusResolved —
+  // fallback на случай, когда страница отрендерена старой версией партиала.
+  var expenseSettings = window.expenseSettings || {};
+  var allStatuses = (expenseSettings.materialStatuses ||
+                     [].concat(expenseSettings.statusInProgress || [], expenseSettings.statusResolved || [])).map(String);
 
   var typesCache = null; // общий для всех строк список типов материала
 
