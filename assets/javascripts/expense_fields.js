@@ -1,8 +1,7 @@
 $(document).ready(function() {
-  var root = $('#expense-fields-root');
-  if (root.length === 0) return; // плагин отключен для этого проекта/трекера/статусов
+  if ($('#expense-fields-root').length === 0) return; // плагин отключен для этого проекта/трекера
 
-  var issueId = root.data('issue-id') || window.currentIssueId;
+  var issueId = $('#expense-fields-root').data('issue-id') || window.currentIssueId;
   var projectId = window.currentProjectId;
   var expenseBase = '/projects/' + projectId + '/expense';
   // materialStatuses — основной источник; statusInProgress/statusResolved —
@@ -23,32 +22,48 @@ $(document).ready(function() {
 
   log('init, issueId =', issueId, 'projectId =', projectId, 'allStatuses =', allStatuses);
 
-  initExpenseFields(issueId);
-
-  function initExpenseFields(issueId) {
-    var statusId = String($('#issue_status_id').val());
-
-    if (allStatuses.indexOf(statusId) !== -1) {
-      loadSavedMaterials(issueId);
-    }
-
-    $('#issue_status_id').on('change', function() {
-      var newStatus = String($(this).val());
-      if (allStatuses.indexOf(newStatus) !== -1) {
-        if ($('#expense-fields-container').length === 0) {
-          loadSavedMaterials(issueId);
-        }
-      } else {
-        $('#expense-fields-container').remove();
-      }
-    });
-
-    $('#issue-form').on('submit', function(e) {
-      if ($('#expense-fields-container').length === 0) return; // нечего сохранять
-      e.preventDefault();
-      saveExpenseMaterials(issueId, this);
-    });
+  function statusAllowsEditing() {
+    return allStatuses.indexOf(String($('#issue_status_id').val())) !== -1;
   }
+
+  // Помечаем текущий root как обработанный: Redmine перерисовывает форму
+  // задачи AJAX'ом при смене статуса/трекера, при этом появляется НОВЫЙ
+  // #expense-fields-root без этой пометки — так мы понимаем, что блок
+  // нужно отрисовать заново.
+  function markRootInitialized() {
+    var rootEl = document.getElementById('expense-fields-root');
+    if (rootEl) rootEl.setAttribute('data-expense-init', '1');
+  }
+
+  function refreshExpenseFields() {
+    markRootInitialized();
+    $('#expense-fields-container').remove();
+    loadSavedMaterials(issueId);
+  }
+
+  refreshExpenseFields();
+
+  // Смена статуса прямо в форме (без перерисовки формы Redmine'ом).
+  $(document).on('change', '#issue_status_id', function() {
+    refreshExpenseFields();
+  });
+
+  // Перерисовка формы Redmine'ом (updateIssueFrom): старый root вместе с
+  // нашим контейнером выбрасывается из DOM, в новой форме root пустой.
+  $(document).ajaxComplete(function() {
+    var rootEl = document.getElementById('expense-fields-root');
+    if (rootEl && !rootEl.getAttribute('data-expense-init')) {
+      refreshExpenseFields();
+    }
+  });
+
+  $(document).on('submit', '#issue-form', function(e) {
+    var container = $('#expense-fields-container');
+    if (container.length === 0) return; // нечего сохранять
+    if (container.attr('data-editable') !== '1') return; // режим просмотра
+    e.preventDefault();
+    saveExpenseMaterials(issueId, this);
+  });
 
   function loadSavedMaterials(issueId) {
     $.ajax({
@@ -67,20 +82,21 @@ $(document).ready(function() {
     });
   }
 
-  function buildRow(material) {
+  function buildRow(material, editable) {
     var id = material ? material.id : '';
     var materialStockId = material ? material.material_stock_id : '';
     var quantity = material ? material.quantity : '';
+    var disabledAttr = editable ? '' : ' disabled';
     return $(
       '<div class="expense-material-row" data-material-id="' + id + '">' +
         '<div class="expense-autocomplete-wrap">' +
-          '<input type="text" class="expense-type-input" placeholder="Начните вводить номенклатуру" autocomplete="off">' +
+          '<input type="text" class="expense-type-input" placeholder="Начните вводить номенклатуру" autocomplete="off"' + disabledAttr + '>' +
           '<input type="hidden" name="expense[material_name][]" class="expense-type-value">' +
           '<ul class="expense-type-suggestions expense-suggestions"></ul>' +
         '</div>' +
-        '<input type="text" name="expense[quantity][]" value="' + (quantity || '') + '" placeholder="Кол-во" class="expense-quantity-input">' +
-        '<span class="stock-info">Доступно: ?</span>' +
-        '<a href="#" class="remove-expense-material" title="Удалить">&#10005;</a>' +
+        '<input type="text" name="expense[quantity][]" value="' + (quantity || '') + '" placeholder="Кол-во" class="expense-quantity-input"' + disabledAttr + '>' +
+        (editable ? '<span class="stock-info">Доступно: ?</span>' : '') +
+        (editable ? '<a href="#" class="remove-expense-material" title="Удалить">&#10005;</a>' : '') +
         '<input type="hidden" name="expense[material_stock_id][]" class="expense-material-stock-id" value="' + (materialStockId || '') + '">' +
         (id ? '<input type="hidden" name="expense[id][]" value="' + id + '">' : '') +
       '</div>'
@@ -88,16 +104,28 @@ $(document).ready(function() {
   }
 
   function renderExpenseFields(materials, issueId) {
+    var root = $('#expense-fields-root');
+    if (root.length === 0) return;
     if ($('#expense-fields-container').length > 0) return;
 
+    var editable = statusAllowsEditing();
+
+    // В "запрещенном" статусе блок показывается только для просмотра уже
+    // добавленных материалов; если их нет — не показывается вообще.
+    if (!editable && materials.length === 0) return;
+
+    var hint = editable ?
+      'Добавьте расходные материалы, использованные при решении задачи' :
+      'Материалы, списанные в этой задаче. Добавление и изменение недоступно в текущем статусе';
+
     var html =
-      '<div id="expense-fields-container">' +
+      '<div id="expense-fields-container" data-editable="' + (editable ? '1' : '0') + '">' +
         '<div class="expense-fields">' +
           '<h3>Расходные материалы</h3>' +
-          '<p class="expense-hint">Добавьте расходные материалы, использованные при решении задачи</p>' +
+          '<p class="expense-hint">' + hint + '</p>' +
           '<div class="expense-materials">' +
             '<div id="expense-materials-container"></div>' +
-            '<a href="#" class="add-expense-material">+ Добавить материал</a>' +
+            (editable ? '<a href="#" class="add-expense-material">+ Добавить материал</a>' : '') +
           '</div>' +
         '</div>' +
       '</div>';
@@ -108,20 +136,26 @@ $(document).ready(function() {
     var rows = materials.length > 0 ? materials : [null];
 
     rows.forEach(function(material) {
-      container.append(buildRow(material));
+      container.append(buildRow(material, editable));
     });
 
-    ensureTypesLoaded(function() {
+    var fillSaved = function() {
       $('.expense-material-row').each(function(index) {
         var row = $(this);
         var material = materials[index];
         if (material) {
           row.find('.expense-type-input').val(material.material_name);
           row.find('.expense-type-value').val(material.material_name);
-          checkStock(row, issueId);
+          if (editable) checkStock(row, issueId);
         }
       });
-    });
+    };
+
+    if (editable) {
+      ensureTypesLoaded(fillSaved);
+    } else {
+      fillSaved();
+    }
   }
 
   // Загружает список типов материала один раз и переиспользует его для всех
@@ -300,7 +334,7 @@ $(document).ready(function() {
   $(document).on('click', '.add-expense-material', function(e) {
     e.preventDefault();
     var container = $('#expense-materials-container');
-    var row = buildRow(null);
+    var row = buildRow(null, true);
     container.append(row);
     ensureTypesLoaded();
   });

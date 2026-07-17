@@ -28,6 +28,7 @@ Rails.application.routes.draw do
 
     # История
     get '/history', to: 'history#index', as: 'history_index'
+    get '/history/export_pdf', to: 'history#export_pdf', as: 'export_pdf_history'
     get '/history/:id', to: 'history#show', as: 'history_show'
     get '/history/:id/download_pdf', to: 'history#download_pdf', as: 'download_pdf_history'
     post '/history/generate_act', to: 'period_acts#create', as: 'generate_period_act'
@@ -35,12 +36,14 @@ Rails.application.routes.draw do
     # Период-акты (подписание комиссией)
     get '/period_acts', to: 'period_acts#index', as: 'period_acts_index'
     get '/period_acts/signed', to: 'period_acts#signed', as: 'signed_period_acts'
+    post '/period_acts/clear', to: 'period_acts#clear', as: 'clear_period_acts'
     get '/period_acts/:id', to: 'period_acts#show', as: 'period_act_show'
     put '/period_acts/:id/sign', to: 'period_acts#sign', as: 'sign_period_act'
     get '/period_acts/:id/download_pdf', to: 'period_acts#download_pdf', as: 'download_pdf_period_act'
 
     # Промежуточная таблица
     get '/intermediate', to: 'intermediate#index', as: 'intermediate_index'
+    put '/intermediate/approve_all', to: 'intermediate#approve_all', as: 'approve_all_intermediate'
     put '/intermediate/:id/approve', to: 'intermediate#approve', as: 'approve_intermediate'
     put '/intermediate/:id/reject', to: 'intermediate#reject', as: 'reject_intermediate'
 

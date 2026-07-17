@@ -27,10 +27,10 @@ Redmine::Plugin.register :redmine_expense do
     permission :view_expense, {
       expense: [:index, :materials, :resolve_stock, :issue_materials, :stock_quantity, :save, :clear_stock, :clean_pdfs],
       stock: [:index, :create, :edit, :update, :export],
-      history: [:index, :show, :download_pdf],
-      intermediate: [:index, :approve, :reject],
+      history: [:index, :show, :download_pdf, :export_pdf],
+      intermediate: [:index, :approve, :approve_all, :reject],
       import: [:new, :preview, :confirm],
-      period_acts: [:create, :index, :show, :signed, :sign, :download_pdf]
+      period_acts: [:create, :index, :show, :signed, :sign, :download_pdf, :clear]
     }, public: true, require: :loggedin
   end
 

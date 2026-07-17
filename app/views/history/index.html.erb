@@ -34,10 +34,26 @@
 <% end %>
 
 <% if expense_manager? %>
-  <div style="margin-bottom: 20px;">
+  <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
     <button type="button" id="generate-act-btn" class="btn btn-primary">Генерация акта</button>
-    <span style="color: #666; font-size: 12px; margin-left: 8px;">По датам "с"/"по" из фильтра выше</span>
+    <button type="button" id="export-pdf-btn" class="btn btn-primary">Скачать PDF списаний за период</button>
+    <span style="color: #666; font-size: 12px;">По датам "с"/"по" из фильтра выше</span>
   </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('export-pdf-btn').addEventListener('click', function() {
+      var startDate = document.getElementById('start_date').value;
+      var endDate = document.getElementById('end_date').value;
+      if (!startDate || !endDate) {
+        alert('Укажите период (дата с / дата по) в фильтре выше');
+        return;
+      }
+      window.location = '<%= export_pdf_history_path(project_id: @project.id) %>' +
+        '?start_date=' + encodeURIComponent(startDate) + '&end_date=' + encodeURIComponent(endDate);
+    });
+  });
+  </script>
 <% end %>
 
 <% if @histories.any? %>

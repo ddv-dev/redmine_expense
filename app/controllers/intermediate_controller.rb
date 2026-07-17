@@ -33,6 +33,45 @@ class IntermediateController < ApplicationController
     redirect_to intermediate_index_path(project_id: @project.id)
   end
 
+  # Подтверждает все ожидающие списания проекта одной датой.
+  def approve_all
+    closed_at = parse_closed_at(params[:closed_at]) || Time.current
+    pending = project_intermediates.pending.to_a
+
+    if pending.empty?
+      flash[:notice] = 'Нет списаний, ожидающих подтверждения'
+      redirect_to intermediate_index_path(project_id: @project.id) and return
+    end
+
+    approved = 0
+    pdf_failed = 0
+    errors = []
+
+    pending.each do |item|
+      if item.approve!(User.current, closed_at: closed_at)
+        approved += 1
+        pdf_failed += 1 if item.pdf_generation_failed?
+      else
+        errors << item.errors.full_messages.join(', ')
+      end
+    rescue => e
+      errors << e.message
+    end
+
+    messages = ["Подтверждено списаний: #{approved} из #{pending.size}"]
+    messages << "PDF не сформирован для #{pdf_failed} (см. лог сервера)" if pdf_failed > 0
+
+    if errors.any?
+      flash[:error] = (messages + ["Ошибки: #{errors.uniq.join('; ')}"]).join('. ')
+    elsif pdf_failed > 0
+      flash[:warning] = messages.join('. ')
+    else
+      flash[:notice] = messages.join('. ')
+    end
+
+    redirect_to intermediate_index_path(project_id: @project.id)
+  end
+
   def reject
     @intermediate = project_intermediates.find(params[:id])
 

@@ -2,6 +2,19 @@
 
 <%= render 'shared/expense_menu' %>
 
+<% if expense_manager? && @intermediates.any? %>
+  <div style="margin-bottom: 15px;">
+    <%= form_tag approve_all_intermediate_path(project_id: @project.id), method: :put,
+          style: 'display: inline-flex; gap: 6px; align-items: center;' do %>
+      <label style="font-size: 12px; color: #666;">Дата списания:</label>
+      <%= date_field_tag :closed_at, Date.current, style: 'width: 140px; height: 28px;' %>
+      <%= submit_tag 'Подтвердить все', class: 'btn btn-primary',
+            data: { confirm: 'Подтвердить ВСЕ ожидающие списания указанной датой?' },
+            style: 'padding: 6px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;' %>
+    <% end %>
+  </div>
+<% end %>
+
 <% if @intermediates.any? %>
   <table class="list">
     <thead>

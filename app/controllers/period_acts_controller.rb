@@ -1,7 +1,7 @@
 class PeriodActsController < ApplicationController
   include ExpenseAuthorization
 
-  before_action :require_expense_manager, only: [:create]
+  before_action :require_expense_manager, only: [:create, :clear]
   before_action :require_committee_access, only: [:index, :show, :signed, :sign, :download_pdf]
   before_action :find_act, only: [:show, :sign, :download_pdf]
 
@@ -101,6 +101,29 @@ class PeriodActsController < ApplicationController
       flash[:error] = 'PDF доступен только для полностью подписанных актов'
       redirect_to signed_period_acts_path(project_id: @project.id)
     end
+  end
+
+  # Полная очистка подписанных актов проекта: удаляются и записи (вместе с
+  # подписями/строками через dependent: :destroy), и PDF-файлы с диска.
+  # Ожидающие подписания акты не трогаются.
+  def clear
+    acts = PeriodAct.where(project_id: @project.id, status: 'signed')
+    deleted = 0
+
+    acts.find_each do |act|
+      if act.pdf_file.present? && File.exist?(act.pdf_file)
+        begin
+          File.delete(act.pdf_file)
+        rescue => e
+          Rails.logger.error "[redmine_expense] Не удалось удалить #{act.pdf_file}: #{e.message}"
+        end
+      end
+      act.destroy
+      deleted += 1
+    end
+
+    flash[:notice] = "Удалено подписанных актов: #{deleted}"
+    redirect_to signed_period_acts_path(project_id: @project.id)
   end
 
   private

@@ -1,3 +1,5 @@
+require 'combine_pdf'
+
 class HistoryController < ApplicationController
   include ExpenseAuthorization
 
@@ -42,7 +44,66 @@ class HistoryController < ApplicationController
     end
   end
 
+  # Объединяет PDF-акты (Заказ-наряды) всех списаний проекта за период в
+  # один файл: одно списание — одна страница (или больше, если акт сам
+  # многостраничный). Отсутствующие PDF генерируются на лету.
+  def export_pdf
+    start_date = parse_date(params[:start_date])
+    end_date = parse_date(params[:end_date])
+
+    if start_date.nil? || end_date.nil?
+      flash[:error] = 'Укажите период (дата с / дата по) для выгрузки PDF'
+      redirect_to history_index_path(project_id: @project.id) and return
+    end
+
+    histories = ExpenseHistory.joins(:material_stock)
+                               .where(material_stocks: { project_id: @project.id })
+                               .where(closed_at: start_date.beginning_of_day..end_date.end_of_day)
+                               .order(:closed_at)
+
+    if histories.empty?
+      flash[:error] = 'За выбранный период нет списаний'
+      redirect_to history_index_path(project_id: @project.id) and return
+    end
+
+    combined = CombinePDF.new
+    failed = 0
+
+    histories.each do |history|
+      path = history.pdf_file.presence
+      path = nil if path && !File.exist?(path)
+      path ||= history.generate_pdf!
+
+      if path && File.exist?(path)
+        combined << CombinePDF.load(path)
+      else
+        failed += 1
+      end
+    rescue => e
+      Rails.logger.error "[redmine_expense] export_pdf: не удалось включить акт списания ##{history.id}: #{e.message}"
+      failed += 1
+    end
+
+    if combined.pages.empty?
+      flash[:error] = 'Не удалось сформировать ни одного PDF-акта за период (см. лог сервера)'
+      redirect_to history_index_path(project_id: @project.id) and return
+    end
+
+    flash[:warning] = "Не удалось включить в файл актов: #{failed}" if failed > 0
+
+    send_data combined.to_pdf,
+              filename: "acts_#{start_date.strftime('%Y%m%d')}-#{end_date.strftime('%Y%m%d')}.pdf",
+              type: 'application/pdf',
+              disposition: 'attachment'
+  end
+
   private
+
+  def parse_date(value)
+    Date.parse(value.to_s)
+  rescue ArgumentError, TypeError
+    nil
+  end
 
   def find_project_history(id)
     ExpenseHistory.joins(:material_stock).where(material_stocks: { project_id: @project.id })
