@@ -27,7 +27,9 @@ class PeriodActsController < ApplicationController
     end
 
     requested_ids = Array(params[:signer_ids]).map(&:to_s) & committee_ids
-    skip_reasons = (params[:skip_reasons] || {}).to_unsafe_h.transform_keys(&:to_s).transform_values { |v| v.to_s.strip }
+    raw_skip_reasons = params[:skip_reasons]
+    raw_skip_reasons = raw_skip_reasons.respond_to?(:to_unsafe_h) ? raw_skip_reasons.to_unsafe_h : (raw_skip_reasons || {})
+    skip_reasons = raw_skip_reasons.transform_keys(&:to_s).transform_values { |v| v.to_s.strip }
 
     if requested_ids.empty?
       flash[:error] = 'Отметьте хотя бы одного члена комиссии, чья подпись запрашивается — иначе акт никто не сможет подписать'
