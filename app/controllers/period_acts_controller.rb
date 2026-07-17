@@ -27,6 +27,12 @@ class PeriodActsController < ApplicationController
     end
 
     requested_ids = Array(params[:signer_ids]).map(&:to_s) & committee_ids
+
+    if requested_ids.empty?
+      flash[:error] = 'Отметьте хотя бы одного члена комиссии, чья подпись запрашивается — иначе акт никто не сможет подписать'
+      redirect_to history_index_path(project_id: @project.id) and return
+    end
+
     histories = project_histories.where(closed_at: start_date.beginning_of_day..end_date.end_of_day)
 
     if histories.empty?

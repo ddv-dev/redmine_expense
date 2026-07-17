@@ -26,6 +26,7 @@
   <thead>
     <tr>
       <th>Номенклатура</th>
+      <th>Наименование номенклатуры</th>
       <th>Наименование поставщика</th>
       <th>Модификация</th>
       <th>Количество</th>
@@ -36,6 +37,7 @@
     <% @materials.each do |material| %>
       <tr>
         <td><%= material.material_type %></td>
+        <td><%= material.material_name %></td>
         <td><%= material.brand %></td>
         <td><%= material.model %></td>
         <td><%= material.quantity %></td>

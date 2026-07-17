@@ -21,7 +21,7 @@
     <% @act.grouped_materials.each_with_index do |item, index| %>
       <tr>
         <td><%= index + 1 %></td>
-        <td><%= item[:material_type] %></td>
+        <td><%= item[:name] %></td>
         <td><%= item[:quantity] %></td>
       </tr>
     <% end %>

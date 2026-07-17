@@ -28,6 +28,7 @@ class ImportForm
         
         quantity = row[0].to_s.strip
         material_type = row[1].to_s.strip
+        material_name = row[2].to_s.strip # "Наименование номенклатуры" — полное название (колонка "Номенклатура" в выгрузке обрезана)
         model = row[4].to_s.strip
         brand = row[6].to_s.strip
         
@@ -114,6 +115,7 @@ class ImportForm
 
         data << {
           material_type: material_type[0..499],
+          material_name: material_name.presence && material_name[0..499],
           brand: brand[0..499],
           model: model[0..499],
           quantity: quantity,
@@ -140,10 +142,11 @@ class ImportForm
       
       quantity = item[:quantity] || item['quantity']
       material_type = item[:material_type] || item['material_type']
+      material_name = item[:material_name] || item['material_name']
       brand = item[:brand] || item['brand']
       model = item[:model] || item['model']
       row_number = item[:row_number] || item['row_number']
-      
+
       if existing
         if existing.quantity != quantity
           mismatches << {
@@ -156,6 +159,7 @@ class ImportForm
         end
         preview_data << {
           material_type: material_type,
+          material_name: material_name,
           brand: brand,
           model: model,
           quantity: quantity,
@@ -168,6 +172,7 @@ class ImportForm
       else
         preview_data << {
           material_type: material_type,
+          material_name: material_name,
           brand: brand,
           model: model,
           quantity: quantity,
@@ -210,7 +215,9 @@ class ImportForm
             next
           end
 
-          if material.update(quantity: item[:quantity])
+          # Наименование номенклатуры обновляем всегда — оно могло быть пустым
+          # у позиций, импортированных до появления этой колонки.
+          if material.update(quantity: item[:quantity], material_name: item[:material_name].presence || material.material_name)
             updated_count += 1
           else
             errors << "Ошибка обновления #{material.display_name}: #{material.errors.full_messages.join(', ')}"
@@ -219,13 +226,14 @@ class ImportForm
           existing = MaterialStock.find_by(hash_key: item[:hash_key], project_id: project_id)
 
           if existing
-            if existing.update(quantity: item[:quantity])
+            if existing.update(quantity: item[:quantity], material_name: item[:material_name].presence || existing.material_name)
               updated_count += 1
             end
           else
             material = MaterialStock.new(
               project_id: project_id,
               material_type: item[:material_type],
+              material_name: item[:material_name],
               brand: item[:brand],
               model: item[:model],
               quantity: item[:quantity],

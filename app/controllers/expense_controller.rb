@@ -21,16 +21,21 @@ class ExpenseController < ApplicationController
     @materials = project_materials.order(created_at: :desc).limit(10)
   end
 
+  # Список для автокомплита на форме задачи — полные "Наименования
+  # номенклатуры" (у старых позиций без него — обрезанная "Номенклатура").
   def materials
-    types = project_materials.distinct.order(:material_type).pluck(:material_type)
-    render json: types.map { |t| { id: t, name: t } }
+    names = project_materials.pluck(:material_name, :material_type)
+                              .map { |name, type| name.presence || type }
+                              .uniq
+                              .sort
+    render json: names.map { |n| { id: n, name: n } }
   end
 
-  # У одной "Номенклатуры" в проекте теоретически может быть несколько позиций
+  # У одного наименования в проекте теоретически может быть несколько позиций
   # склада (разные поставщик/модификация) — форма задачи их больше не
-  # различает, всегда берется первая заведенная позиция этого типа.
+  # различает, всегда берется первая заведенная позиция этого наименования.
   def resolve_stock
-    stock = project_materials.where(material_type: params[:material_type]).order(:id).first
+    stock = find_stock_by_name(params[:material_name])
 
     if stock
       render json: { id: stock.id, brand: stock.brand, model: stock.model, quantity: stock.quantity }
@@ -46,9 +51,9 @@ class ExpenseController < ApplicationController
       {
         id: m.id,
         material_stock_id: m.material_stock_id,
-        material_type: m.material_stock.material_type,
-        brand: m.material_stock.brand,
-        model: m.material_stock.model,
+        material_name: m.material_stock&.display_material_name,
+        brand: m.material_stock&.brand,
+        model: m.material_stock&.model,
         quantity: m.quantity_used
       }
     end
@@ -57,10 +62,10 @@ class ExpenseController < ApplicationController
   end
 
   def stock_quantity
-    stock = find_material_stock(params[:material_stock_id], params[:material_type], params[:brand], params[:model])
+    stock = find_material_stock(params[:material_stock_id], params[:material_name])
 
     unless stock
-      Rails.logger.warn "[redmine_expense] stock_quantity: материал не найден (material_stock_id=#{params[:material_stock_id].inspect}, material_type=#{params[:material_type].inspect}, brand=#{params[:brand].inspect}, model=#{params[:model].inspect})"
+      Rails.logger.warn "[redmine_expense] stock_quantity: материал не найден (material_stock_id=#{params[:material_stock_id].inspect}, material_name=#{params[:material_name].inspect})"
       render json: { quantity: 0, available: false, error: 'Материал не найден' }, status: :not_found
       return
     end
@@ -94,22 +99,22 @@ class ExpenseController < ApplicationController
     errors = []
 
     materials.each do |material|
-      mat_type = material[:material_type] || material['material_type']
+      mat_name = material[:material_name] || material['material_name']
       quantity = material[:quantity] || material['quantity']
       mat_id = material[:id] || material['id']
       mat_stock_id = material[:material_stock_id] || material['material_stock_id']
 
-      next if mat_type.blank? || quantity.blank?
+      next if mat_name.blank? || quantity.blank?
 
       quantity_f = quantity.to_f
       if quantity_f <= 0
-        errors << "Количество должно быть больше нуля для «#{mat_type}»"
+        errors << "Количество должно быть больше нуля для «#{mat_name}»"
         next
       end
 
-      stock = find_material_stock(mat_stock_id, mat_type, nil, nil)
+      stock = find_material_stock(mat_stock_id, mat_name)
       unless stock
-        errors << "Материал «#{mat_type}» не найден в базе"
+        errors << "Материал «#{mat_name}» не найден в базе"
         next
       end
 
@@ -152,6 +157,9 @@ class ExpenseController < ApplicationController
 
     if request.post?
       ActiveRecord::Base.transaction do
+        # Период-акты ссылаются на удаляемую историю — без них ожидающие
+        # подписания акты остались бы с пустой таблицей материалов.
+        PeriodAct.where(project_id: @project.id).destroy_all
         project_intermediates.delete_all
         project_histories.delete_all
         project_materials.delete_all
@@ -222,12 +230,15 @@ class ExpenseController < ApplicationController
   # не имеет отношения к проекту в своем имени), поэтому "осиротевший" файл
   # проверяется по ВСЕМ проектам сразу — иначе очистка из одного проекта
   # удалила бы файлы, все еще используемые записями истории другого проекта.
+  # Учитываются оба вида актов: по одной позиции (ExpenseHistory) и
+  # подписанные акты за период (PeriodAct) — они лежат в одной папке.
   def orphaned_pdf_files
     dir = Rails.root.join('files', 'redmine_expense')
     return [] unless Dir.exist?(dir)
 
     all_files = Dir.glob(dir.join('*.pdf')).map { |f| File.expand_path(f) }
     referenced = ExpenseHistory.where.not(pdf_file: [nil, '']).distinct.pluck(:pdf_file).map { |f| File.expand_path(f) }
+    referenced += PeriodAct.where.not(pdf_file: [nil, '']).distinct.pluck(:pdf_file).map { |f| File.expand_path(f) }
 
     all_files - referenced
   end
@@ -255,15 +266,25 @@ class ExpenseController < ApplicationController
   end
 
   # Ищет материал прежде всего по первичному ключу (надежно, не зависит от
-  # текста), и только если его не передали — по тройке текстовых полей
-  # (для обратной совместимости и запасного варианта). Всегда в пределах
-  # текущего проекта, чтобы нельзя было списать материал чужого склада.
-  def find_material_stock(material_stock_id, material_type, brand, model)
+  # текста), и только если его не передали — по наименованию (запасной
+  # вариант). Всегда в пределах текущего проекта, чтобы нельзя было списать
+  # материал чужого склада.
+  def find_material_stock(material_stock_id, material_name)
     if material_stock_id.present?
       stock = project_materials.find_by(id: material_stock_id)
       return stock if stock
     end
 
-    project_materials.find_by(material_type: material_type, brand: brand, model: model)
+    find_stock_by_name(material_name)
+  end
+
+  # Поиск по полному "Наименованию номенклатуры"; у позиций, у которых оно
+  # не заполнено (старые/ручные), автокомплит отдает "Номенклатуру" — ищем
+  # и по ней тоже.
+  def find_stock_by_name(material_name)
+    return nil if material_name.blank?
+
+    project_materials.where('material_name = :v OR (material_name IS NULL AND material_type = :v) OR (material_name = \'\' AND material_type = :v)', v: material_name)
+                      .order(:id).first
   end
 end

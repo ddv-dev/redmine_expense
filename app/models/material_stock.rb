@@ -8,6 +8,7 @@ class MaterialStock < ApplicationRecord
   has_many :expense_histories, dependent: :restrict_with_error
 
   validates :material_type, presence: true, length: { maximum: 500 }
+  validates :material_name, length: { maximum: 500 }, allow_nil: true
   validates :brand, presence: true, length: { maximum: 500 }
   validates :model, presence: true, length: { maximum: 500 }
   validates :quantity, numericality: { greater_than_or_equal_to: 0 }
@@ -28,8 +29,14 @@ class MaterialStock < ApplicationRecord
     Digest::MD5.hexdigest("#{material_type.to_s.strip.downcase}|#{brand.to_s.strip.downcase}|#{model.to_s.strip.downcase}")
   end
 
+  # Полное "Наименование номенклатуры" (для поиска и текстов актов);
+  # у старых/вручную заведенных позиций без него — обрезанная "Номенклатура".
+  def display_material_name
+    material_name.presence || material_type
+  end
+
   def display_name
-    "#{material_type} | #{brand} | #{model}"
+    "#{display_material_name} | #{brand} | #{model}"
   end
 
   def reserved_quantity(exclude_issue_id: nil)

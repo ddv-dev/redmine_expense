@@ -3,16 +3,24 @@
 <head>
 <meta charset="utf-8">
 <style>
-  body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 14px; color: #222; margin: 0; }
+  body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 16px; color: #222; margin: 0; }
   h1 { font-size: 18px; margin: 0 0 6px; text-align: center; }
   .act-date { text-align: right; margin: 0 0 20px; }
   .meta p { margin: 0 0 15px; }
   table.materials { width: 100%; border-collapse: collapse; margin: 15px 0; }
-  table.materials th, table.materials td { border: 1px solid #333; padding: 6px 8px; text-align: left; font-size: 14px; }
+  table.materials th, table.materials td { border: 1px solid #333; padding: 6px 8px; text-align: left; font-size: 16px; }
   table.materials th { background: #f0f0f0; }
   table.materials td.num { text-align: center; width: 40px; }
   table.materials td.qty { text-align: right; width: 90px; }
   table.materials tr.total-row td { font-weight: bold; }
+
+  .sig-block { margin-top: 25px; }
+  .sig-role { font-weight: bold; margin: 15px 0 6px; }
+  .sig-plain { display: flex; align-items: flex-end; gap: 20px; margin-bottom: 10px; }
+  .sig-plain .sig-line { flex: 0 0 220px; border-bottom: 1px solid #333; height: 18px; }
+  .sig-plain .sig-name { color: #222; }
+  .esign-box { border: 2px solid #2b57d6; border-radius: 4px; padding: 10px 12px; color: #2b57d6; margin-bottom: 10px; max-width: 460px; }
+  .esign-box p { margin: 2px 0; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -35,15 +43,42 @@
       <% grouped_materials.each_with_index do |item, index| %>
         <tr>
           <td class="num"><%= index + 1 %></td>
-          <td><%= item[:material_type] %></td>
+          <td><%= item[:name] %></td>
           <td class="qty"><%= item[:quantity] %></td>
         </tr>
       <% end %>
       <tr class="total-row">
         <td colspan="2">Итого</td>
-        <td class="qty"><%= grouped_materials.sum { |i| i[:quantity] } %> шт.</td>
+        <td class="qty"><%= act.total_quantity %> шт.</td>
       </tr>
     </tbody>
   </table>
+
+  <div class="sig-block">
+    <% if chairman %>
+      <div class="sig-role">Председатель</div>
+      <div class="sig-plain">
+        <span class="sig-line"></span>
+        <span class="sig-name"><%= chairman.name %></span>
+      </div>
+    <% end %>
+
+    <div class="sig-role">Члены комиссии</div>
+    <% signatures.each do |signature| %>
+      <% if signature.status == 'signed' %>
+        <div class="esign-box">
+          <p>Документ подписан простой электронной подписью</p>
+          <p>ФИО: <%= signature.user&.name %></p>
+          <p>Логин: <%= signature.user&.login %></p>
+          <p>Дата подписания: <%= signature.signed_at ? RedmineExpense::RussianDate.short(signature.signed_at) : '-' %></p>
+        </div>
+      <% else %>
+        <div class="sig-plain">
+          <span class="sig-line"></span>
+          <span class="sig-name"><%= signature.user&.name %></span>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
 </body>
 </html>

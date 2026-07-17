@@ -34,12 +34,21 @@ class PeriodAct < ApplicationRecord
   end
 
   # Список материалов для таблицы акта — сгруппировано и просуммировано по
-  # номенклатуре (как в исходном образце: поставщик/модификация в акте не
-  # фигурируют, только "Наименование номенклатуры" и суммарное количество).
+  # полному "Наименованию номенклатуры" (как в исходном образце: поставщик/
+  # модификация в акте не фигурируют, только наименование и количество).
+  # Целые количества показываются без дробной части ("16", а не "16.0").
   def grouped_materials
-    expense_histories.includes(:material_stock).group_by { |h| h.material_stock&.material_type.to_s }.map do |material_type, histories|
-      { material_type: material_type, quantity: histories.sum(&:quantity_used) }
-    end.sort_by { |g| g[:material_type] }
+    expense_histories.includes(:material_stock).group_by { |h| h.material_stock&.display_material_name.to_s }.map do |name, histories|
+      { name: name, quantity: self.class.format_quantity(histories.sum(&:quantity_used)) }
+    end.sort_by { |g| g[:name] }
+  end
+
+  def total_quantity
+    self.class.format_quantity(expense_histories.sum(:quantity_used))
+  end
+
+  def self.format_quantity(quantity)
+    quantity % 1 == 0 ? quantity.to_i : quantity.to_f
   end
 
   def all_requested_signed?
@@ -64,29 +73,22 @@ class PeriodAct < ApplicationRecord
   end
 
   def generate_pdf!
-    ordered_signatures = period_act_signatures.includes(:user).order(:id)
     render_locals = {
       act: self,
       project: project,
       grouped_materials: grouped_materials,
       chairman: chairman,
-      signatures: ordered_signatures
+      signatures: period_act_signatures.includes(:user).order(:id)
     }
 
     html = ApplicationController.render(template: 'expense_pdf/period_act', layout: false, locals: render_locals)
-    footer_html = ApplicationController.render(template: 'expense_pdf/period_act_footer', layout: false, locals: render_locals)
 
     pdf_options = {
       encoding: 'UTF-8',
-      # 3 см слева, 1.5 см справа — как в исходном образце акта. Блок
-      # подписей прижимается к нижнему краю (2 см от него) через footer-
-      # область wkhtmltopdf — тот же проверенный прием, что и в
-      # ExpenseHistory#generate_pdf!, только высота footer'а здесь
-      # считается динамически под фактическое число членов комиссии
-      # (flex/margin-top:auto внутри обычного контента body в wkhtmltopdf
-      # не сработал — блок подписей просто оставался сразу под таблицей).
-      margin: { top: 15, bottom: footer_height_mm(ordered_signatures), left: 30, right: 15 },
-      footer: { content: footer_html, spacing: 0 }
+      # 3 см слева, 1.5 см справа, 2 см снизу — как в исходном образце.
+      # Председатель и члены комиссии идут в обычном потоке документа сразу
+      # после таблицы (по решению заказчика), никакой footer-области не нужно.
+      margin: { top: 15, bottom: 20, left: 30, right: 15 }
     }
     exe_path = RedmineExpense::PdfGeneration.wkhtmltopdf_exe_path
     pdf_options[:exe_path] = exe_path if exe_path
@@ -103,21 +105,5 @@ class PeriodAct < ApplicationRecord
   rescue => e
     Rails.logger.error "[redmine_expense] Ошибка генерации PDF периодического акта ##{id}: #{e.message}"
     nil
-  end
-
-  private
-
-  # Высота footer-области (мм) под конкретное число членов комиссии: 2 см
-  # отступ от нижнего края страницы + строка председателя + по строке/штампу
-  # на каждого члена комиссии (подписанный штамп визуально выше пустой
-  # строки без подписи).
-  def footer_height_mm(ordered_signatures)
-    height = 20 # отступ от нижнего края страницы
-    height += 14 if chairman
-    height += 14 # заголовок "Члены комиссии"
-    ordered_signatures.each do |signature|
-      height += signature.status == 'signed' ? 24 : 14
-    end
-    [height, 40].max
   end
 end

@@ -73,7 +73,7 @@ $(document).ready(function() {
       '<div class="expense-material-row" data-material-id="' + id + '">' +
         '<div class="expense-autocomplete-wrap">' +
           '<input type="text" class="expense-type-input" placeholder="Начните вводить номенклатуру" autocomplete="off">' +
-          '<input type="hidden" name="expense[material_type][]" class="expense-type-value">' +
+          '<input type="hidden" name="expense[material_name][]" class="expense-type-value">' +
           '<ul class="expense-type-suggestions expense-suggestions"></ul>' +
         '</div>' +
         '<input type="text" name="expense[quantity][]" value="' + (quantity || '') + '" placeholder="Кол-во" class="expense-quantity-input">' +
@@ -114,8 +114,8 @@ $(document).ready(function() {
         var row = $(this);
         var material = materials[index];
         if (material) {
-          row.find('.expense-type-input').val(material.material_type);
-          row.find('.expense-type-value').val(material.material_type);
+          row.find('.expense-type-input').val(material.material_name);
+          row.find('.expense-type-value').val(material.material_name);
           checkStock(row, issueId);
         }
       });
@@ -149,15 +149,15 @@ $(document).ready(function() {
   // для выбранной номенклатуры всегда берется первая заведенная на складе
   // проекта позиция (server: MaterialStock.order(:id).first).
   function resolveStock(row, issueId) {
-    var materialType = row.find('.expense-type-value').val();
+    var materialName = row.find('.expense-type-value').val();
     resetStock(row);
 
-    if (!materialType) return;
+    if (!materialName) return;
 
     $.ajax({
       url: expenseBase + '/resolve_stock',
       method: 'GET',
-      data: { material_type: materialType },
+      data: { material_name: materialName },
       dataType: 'json',
       success: function(data) {
         if (!data || !data.id) {
@@ -216,17 +216,17 @@ $(document).ready(function() {
   }
 
   function checkStock(row, issueId) {
-    var materialType = row.find('.expense-type-value').val();
+    var materialName = row.find('.expense-type-value').val();
     var materialStockId = row.find('.expense-material-stock-id').val();
     var stockInfo = row.find('.stock-info');
     var quantityInput = row.find('.expense-quantity-input');
 
-    if (!materialType || !materialStockId) {
+    if (!materialName || !materialStockId) {
       stockInfo.text('Доступно: ?');
       return;
     }
 
-    var params = { material_type: materialType, material_stock_id: materialStockId };
+    var params = { material_name: materialName, material_stock_id: materialStockId };
     if (issueId) params.issue_id = issueId;
 
     $.ajax({
@@ -332,20 +332,20 @@ $(document).ready(function() {
     $('.expense-material-row').each(function() {
       var row = $(this);
       var typeTyped = row.find('.expense-type-input').val();
-      var materialType = row.find('.expense-type-value').val();
+      var materialName = row.find('.expense-type-value').val();
       var materialStockId = row.find('.expense-material-stock-id').val();
       var quantity = row.find('.expense-quantity-input').val();
       var id = row.find('input[name="expense[id][]"]').val();
 
       if (!typeTyped && !quantity) return; // пустая строка
 
-      if (typeTyped && !materialType) {
+      if (typeTyped && !materialName) {
         hasErrors = true;
         alert('Выберите номенклатуру из выпадающего списка подсказок, а не просто впишите текст.');
         return false;
       }
 
-      if (!materialType || !materialStockId || !quantity) {
+      if (!materialName || !materialStockId || !quantity) {
         hasErrors = true;
         alert('Заполните номенклатуру и количество материала во всех строках.');
         return false;
@@ -364,13 +364,13 @@ $(document).ready(function() {
         var available = parseFloat(match[1]);
         if (quantityNum > available) {
           hasErrors = true;
-          alert('Недостаточно материала "' + materialType + '".\nДоступно: ' + available + ', запрошено: ' + quantityNum);
+          alert('Недостаточно материала "' + materialName + '".\nДоступно: ' + available + ', запрошено: ' + quantityNum);
           return false;
         }
       }
 
       materials.push({
-        material_type: materialType,
+        material_name: materialName,
         material_stock_id: materialStockId,
         quantity: quantity,
         id: id

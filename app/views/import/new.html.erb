@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <tr>
             <th>Строка</th>
             <th>Номенклатура</th>
+            <th>Наименование номенклатуры</th>
             <th>Наименование поставщика</th>
             <th>Модификация</th>
             <th>Количество</th>
@@ -189,6 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <tr class="${isMismatch ? 'mismatch-row' : ''}">
           <td>${item.row_number}</td>
           <td>${item.material_type}</td>
+          <td>${item.material_name || '-'}</td>
           <td>${item.brand}</td>
           <td>${item.model}</td>
           <td>${item.quantity}</td>
@@ -199,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     if (data.preview.data.length > 50) {
-      tableHtml += `<tr><td colspan="7" style="text-align: center; color: #666;">Показано 50 из ${data.total} записей</td></tr>`;
+      tableHtml += `<tr><td colspan="8" style="text-align: center; color: #666;">Показано 50 из ${data.total} записей</td></tr>`;
     }
 
     tableHtml += '</tbody></table>';

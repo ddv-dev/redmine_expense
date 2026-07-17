@@ -24,7 +24,7 @@
   <table class="materials">
     <thead>
       <tr>
-        <th>Номенклатура</th>
+        <th>Наименование номенклатуры</th>
         <th>Наименование поставщика</th>
         <th>Модификация</th>
         <th>Кол-во</th>
@@ -33,7 +33,7 @@
     </thead>
     <tbody>
       <tr>
-        <td><%= history.material_stock&.material_type %></td>
+        <td><%= history.material_stock&.display_material_name %></td>
         <td><%= history.material_stock&.brand %></td>
         <td><%= history.material_stock&.model %></td>
         <td><%= history.quantity_used %></td>

@@ -28,6 +28,7 @@
   <thead>
     <tr>
       <th>Номенклатура</th>
+      <th>Наименование номенклатуры</th>
       <th>Наименование поставщика</th>
       <th>Модификация</th>
       <th>Количество</th>
@@ -41,6 +42,7 @@
     <% @materials.each do |material| %>
       <tr id="material-row-<%= material.id %>">
         <td><%= material.material_type %></td>
+        <td><%= material.material_name %></td>
         <td><%= material.brand %></td>
         <td><%= material.model %></td>
         <td style="<%= 'color: red; font-weight: bold;' if material.low_stock? %>">
@@ -72,6 +74,10 @@
         <p>
           <label>Номенклатура</label><br>
           <%= text_field_tag 'material_stock[material_type]', nil, style: 'width:100%;' %>
+        </p>
+        <p>
+          <label>Наименование номенклатуры</label><br>
+          <%= text_field_tag 'material_stock[material_name]', nil, style: 'width:100%;' %>
         </p>
         <p>
           <label>Наименование поставщика</label><br>
@@ -119,6 +125,10 @@
       <input type="text" id="edit-material-type" style="width:100%;">
     </p>
     <p>
+      <label>Наименование номенклатуры</label><br>
+      <input type="text" id="edit-material-name" style="width:100%;">
+    </p>
+    <p>
       <label>Наименование поставщика</label><br>
       <input type="text" id="edit-brand" style="width:100%;">
     </p>
@@ -156,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(function(r) { return r.json(); })
         .then(function(material) {
           document.getElementById('edit-material-type').value = material.material_type || '';
+          document.getElementById('edit-material-name').value = material.material_name || '';
           document.getElementById('edit-brand').value = material.brand || '';
           document.getElementById('edit-model').value = material.model || '';
           document.getElementById('edit-quantity').value = material.quantity || 0;
@@ -173,6 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var payload = {
       material_stock: {
         material_type: document.getElementById('edit-material-type').value,
+        material_name: document.getElementById('edit-material-name').value,
         brand: document.getElementById('edit-brand').value,
         model: document.getElementById('edit-model').value,
         quantity: document.getElementById('edit-quantity').value,

@@ -53,9 +53,9 @@ class StockController < ApplicationController
   def export
     package = Axlsx::Package.new
     package.workbook.add_worksheet(name: 'Остатки') do |sheet|
-      sheet.add_row ['Номенклатура', 'Наименование поставщика', 'Модификация', 'Количество', 'Описание']
+      sheet.add_row ['Номенклатура', 'Наименование номенклатуры', 'Наименование поставщика', 'Модификация', 'Количество', 'Описание']
       MaterialStock.where(project_id: @project.id).order(:material_type, :brand, :model).find_each do |material|
-        sheet.add_row [material.material_type, material.brand, material.model, material.quantity, material.description]
+        sheet.add_row [material.material_type, material.material_name, material.brand, material.model, material.quantity, material.description]
       end
     end
 
@@ -74,13 +74,14 @@ class StockController < ApplicationController
   end
 
   def material_params
-    params.require(:material_stock).permit(:material_type, :brand, :model, :quantity, :description)
+    params.require(:material_stock).permit(:material_type, :material_name, :brand, :model, :quantity, :description)
   end
 
   def material_json(material)
     {
       id: material.id,
       material_type: material.material_type,
+      material_name: material.material_name,
       brand: material.brand,
       model: material.model,
       quantity: material.quantity,
