@@ -60,12 +60,12 @@
   <div class="sig-block">
     <% if chairman && chairman_signature %>
       <div class="sig-role">Председатель</div>
-      <%= render 'signature_row', signature: chairman_signature %>
+      <%= render 'expense_pdf/signature_row', signature: chairman_signature %>
     <% end %>
 
     <div class="sig-role">Члены комиссии</div>
     <% committee_signatures.each do |signature| %>
-      <%= render 'signature_row', signature: signature %>
+      <%= render 'expense_pdf/signature_row', signature: signature %>
     <% end %>
   </div>
 </body>
