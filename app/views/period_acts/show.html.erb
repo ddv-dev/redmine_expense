@@ -8,6 +8,13 @@
   <p><strong>Статус:</strong> <%= @act.signed? ? 'Полностью подписан' : 'Ожидает подписей' %></p>
 </div>
 
+<% if expense_manager? && @act.all_requested_signed? && (@act.pending? || @act.pdf_missing?) %>
+  <div class="box" style="background: #fff3cd; border-color: #ffc107;">
+    <p>Все запрошенные подписи собраны, но PDF не сформирован (ошибка при генерации — подробности в логе сервера). Можно попробовать сформировать его повторно.</p>
+    <%= link_to 'Сформировать PDF', regenerate_pdf_period_act_path(id: @act.id, project_id: @project.id), method: :put, class: 'btn btn-primary' %>
+  </div>
+<% end %>
+
 <h3>Материалы</h3>
 <table class="list">
   <thead>

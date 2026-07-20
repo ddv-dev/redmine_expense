@@ -1,9 +1,9 @@
 class PeriodActsController < ApplicationController
   include ExpenseAuthorization
 
-  before_action :require_expense_manager, only: [:create, :clear]
+  before_action :require_expense_manager, only: [:create, :clear, :regenerate_pdf]
   before_action :require_committee_access, only: [:index, :show, :signed, :sign, :download_pdf]
-  before_action :find_act, only: [:show, :sign, :download_pdf]
+  before_action :find_act, only: [:show, :sign, :download_pdf, :regenerate_pdf]
 
   # Собирает акт по всем списаниям проекта за период, снэпшотит состав
   # комиссии/председателя из текущих настроек проекта и заводит по одной
@@ -114,12 +114,32 @@ class PeriodActsController < ApplicationController
   end
 
   def download_pdf
-    if @act.signed? && @act.pdf_file.present? && File.exist?(@act.pdf_file)
+    @act.generate_pdf! if @act.signed? && @act.pdf_missing?
+
+    if @act.signed? && !@act.pdf_missing?
       send_file @act.pdf_file, type: 'application/pdf', disposition: 'inline', filename: "period_act_#{@act.id}.pdf"
     else
       flash[:error] = 'PDF доступен только для полностью подписанных актов'
       redirect_to signed_period_acts_path(project_id: @project.id)
     end
+  end
+
+  # Повторная попытка сформировать PDF — на случай, если все подписи собраны,
+  # а генерация ранее не удалась (см. лог сервера) и акт остался в "pending".
+  def regenerate_pdf
+    unless @act.all_requested_signed?
+      flash[:error] = 'Не все запрошенные подписи собраны — PDF формируется только после того, как подпишут все'
+      redirect_to period_act_show_path(id: @act.id, project_id: @project.id) and return
+    end
+
+    if @act.generate_pdf!
+      @act.update!(status: 'signed') unless @act.signed?
+      flash[:notice] = 'PDF успешно сформирован'
+    else
+      flash[:error] = 'Не удалось сформировать PDF — подробности в логе сервера (production.log)'
+    end
+
+    redirect_to period_act_show_path(id: @act.id, project_id: @project.id)
   end
 
   # Полная очистка подписанных актов проекта: удаляются и записи (вместе с

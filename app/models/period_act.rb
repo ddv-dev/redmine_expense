@@ -55,9 +55,16 @@ class PeriodAct < ApplicationRecord
     period_act_signatures.requested.where.not(status: 'signed').none?
   end
 
+  def pdf_missing?
+    pdf_file.blank? || !File.exist?(pdf_file)
+  end
+
   # Фиксирует подпись пользователя, если у него есть ожидающая запрошенная
   # подпись на этом акте. Когда подписали все запрошенные — генерирует
-  # финальный PDF и переводит акт в "Подписанные акты".
+  # финальный PDF и переводит акт в "Подписанные акты". Если генерация PDF
+  # не удалась (см. лог сервера), акт остаётся в "pending" — иначе он попал
+  # бы в "Подписанные акты" без самого PDF-файла. Повторить генерацию можно
+  # кнопкой "Сформировать PDF" на странице акта.
   def sign!(user)
     signature = period_act_signatures.find_by(user_id: user.id, requested: true, status: 'pending')
     return false unless signature
@@ -65,8 +72,7 @@ class PeriodAct < ApplicationRecord
     signature.update!(status: 'signed', signed_at: Time.current)
 
     if all_requested_signed?
-      generate_pdf!
-      update!(status: 'signed')
+      update!(status: 'signed') if generate_pdf!
     end
 
     true

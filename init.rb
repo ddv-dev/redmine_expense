@@ -30,7 +30,7 @@ Redmine::Plugin.register :redmine_expense do
       history: [:index, :show, :download_pdf, :export_pdf],
       intermediate: [:index, :approve, :approve_all, :reject],
       import: [:new, :preview, :confirm],
-      period_acts: [:create, :index, :show, :signed, :sign, :download_pdf, :clear]
+      period_acts: [:create, :index, :show, :signed, :sign, :download_pdf, :clear, :regenerate_pdf]
     }, public: true, require: :loggedin
   end
 

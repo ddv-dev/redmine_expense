@@ -39,6 +39,7 @@ Rails.application.routes.draw do
     post '/period_acts/clear', to: 'period_acts#clear', as: 'clear_period_acts'
     get '/period_acts/:id', to: 'period_acts#show', as: 'period_act_show'
     put '/period_acts/:id/sign', to: 'period_acts#sign', as: 'sign_period_act'
+    put '/period_acts/:id/regenerate_pdf', to: 'period_acts#regenerate_pdf', as: 'regenerate_pdf_period_act'
     get '/period_acts/:id/download_pdf', to: 'period_acts#download_pdf', as: 'download_pdf_period_act'
 
     # Промежуточная таблица
