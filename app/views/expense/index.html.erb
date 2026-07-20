@@ -16,7 +16,7 @@
     <p style="margin: 5px 0 0; color: #155724;">Всего списаний</p>
   </div>
   <div style="background: #cce5ff; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #007bff;">
-    <h3 style="margin: 0; color: #004085;"><%= @total_quantity %></h3>
+    <h3 style="margin: 0; color: #004085;"><%= RedmineExpense::Quantity.format(@total_quantity) %></h3>
     <p style="margin: 5px 0 0; color: #004085;">Общее количество</p>
   </div>
 </div>
@@ -40,7 +40,7 @@
         <td><%= material.material_name %></td>
         <td><%= material.brand %></td>
         <td><%= material.model %></td>
-        <td><%= material.quantity %></td>
+        <td><%= RedmineExpense::Quantity.format(material.quantity) %></td>
         <td><%= material.description %></td>
       </tr>
     <% end %>

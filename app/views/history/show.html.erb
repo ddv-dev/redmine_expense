@@ -11,7 +11,7 @@
     <% end %>
   </p>
   <p><strong>Материал:</strong> <%= @history.material_stock&.display_name || 'Удален' %></p>
-  <p><strong>Количество:</strong> <%= @history.quantity_used %></p>
+  <p><strong>Количество:</strong> <%= RedmineExpense::Quantity.format(@history.quantity_used) %></p>
   <p><strong>Кто списал:</strong> <%= @history.user&.name || 'Неизвестен' %></p>
   <p><strong>Кто закрыл задачу:</strong> <%= @history.closer&.name || 'Неизвестен' %></p>
   <p><strong>Дата списания:</strong> <%= format_time(@history.closed_at) %></p>

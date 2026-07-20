@@ -36,7 +36,7 @@
         <td><%= history.material_stock&.display_material_name %></td>
         <td><%= history.material_stock&.brand %></td>
         <td><%= history.material_stock&.model %></td>
-        <td><%= history.quantity_used %></td>
+        <td><%= RedmineExpense::Quantity.format(history.quantity_used) %></td>
         <td><%= history.material_stock&.description %></td>
       </tr>
     </tbody>

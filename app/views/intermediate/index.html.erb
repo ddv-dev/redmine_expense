@@ -40,7 +40,7 @@
             <% end %>
           </td>
           <td><%= item.material_stock&.display_name || 'Удален' %></td>
-          <td><%= item.quantity_used %></td>
+          <td><%= RedmineExpense::Quantity.format(item.quantity_used) %></td>
           <td><%= item.user&.name || 'Неизвестен' %></td>
           <td><%= item.author&.name || 'Неизвестен' %></td>
           <td><%= format_time(item.created_at) %></td>

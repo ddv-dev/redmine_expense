@@ -48,7 +48,7 @@ class PeriodAct < ApplicationRecord
   end
 
   def self.format_quantity(quantity)
-    quantity % 1 == 0 ? quantity.to_i : quantity.to_f
+    RedmineExpense::Quantity.format(quantity)
   end
 
   def all_requested_signed?

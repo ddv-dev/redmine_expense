@@ -1,0 +1,15 @@
+<% if signature.status == 'signed' %>
+  <div class="esign-box">
+    <p>Документ подписан простой электронной подписью</p>
+    <p>ФИО: <%= signature.user&.name %></p>
+    <p>Логин: <%= signature.user&.login %></p>
+    <p>Дата подписания: <%= signature.signed_at ? RedmineExpense::RussianDate.short(signature.signed_at) : '-' %></p>
+  </div>
+<% else %>
+  <div class="sig-plain">
+    <span class="sig-line"></span>
+    <span class="sig-name">
+      <%= signature.user&.name %><% if !signature.requested? && signature.skip_reason.present? %> — <%= signature.skip_reason %><% end %>
+    </span>
+  </div>
+<% end %>

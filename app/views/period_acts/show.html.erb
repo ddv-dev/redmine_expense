@@ -38,16 +38,11 @@
     </tr>
   </thead>
   <tbody>
-    <% if @act.chairman %>
-      <tr>
-        <td><%= @act.chairman.name %> (Председатель)</td>
-        <td>Не подписывает в системе</td>
-        <td>-</td>
-      </tr>
-    <% end %>
     <% @signatures.each do |signature| %>
       <tr>
-        <td><%= signature.user&.name || 'Неизвестен' %></td>
+        <td>
+          <%= signature.user&.name || 'Неизвестен' %><% if @act.chairman_id.present? && signature.user_id == @act.chairman_id %> (Председатель)<% end %>
+        </td>
         <td>
           <% if signature.status == 'signed' %>
             <span style="color: green;">Подписал</span>

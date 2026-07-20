@@ -55,7 +55,7 @@ class StockController < ApplicationController
     package.workbook.add_worksheet(name: 'Остатки') do |sheet|
       sheet.add_row ['Номенклатура', 'Наименование номенклатуры', 'Наименование поставщика', 'Модификация', 'Количество', 'Описание']
       MaterialStock.where(project_id: @project.id).order(:material_type, :brand, :model).find_each do |material|
-        sheet.add_row [material.material_type, material.material_name, material.brand, material.model, material.quantity, material.description]
+        sheet.add_row [material.material_type, material.material_name, material.brand, material.model, RedmineExpense::Quantity.format(material.quantity), material.description]
       end
     end
 

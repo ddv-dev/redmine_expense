@@ -8,7 +8,9 @@ class PeriodActsController < ApplicationController
   # Собирает акт по всем списаниям проекта за период, снэпшотит состав
   # комиссии/председателя из текущих настроек проекта и заводит по одной
   # ожидающей подписи на каждого члена комиссии (requested — только на тех,
-  # кого отметили в форме "Отправить комиссии").
+  # кого отметили в форме "Отправить комиссии") плюс всегда одну на
+  # председателя — он подписывает наравне с комиссией, его подпись нельзя
+  # пропустить.
   def create
     start_date = parse_date(params[:start_date])
     end_date = parse_date(params[:end_date])
@@ -66,6 +68,18 @@ class PeriodActsController < ApplicationController
           requested: requested,
           skip_reason: requested ? nil : skip_reasons[uid].presence
         )
+      end
+
+      # Председатель подписывает акт в системе наравне с членами комиссии —
+      # его подпись всегда запрашивается (пропустить нельзя), даже если он
+      # также значится в списке комиссии.
+      if act.chairman_id.present?
+        chairman_signature = act.period_act_signatures.find_by(user_id: act.chairman_id)
+        if chairman_signature
+          chairman_signature.update!(requested: true, skip_reason: nil) unless chairman_signature.requested?
+        else
+          PeriodActSignature.create!(period_act: act, user_id: act.chairman_id, requested: true)
+        end
       end
     end
 

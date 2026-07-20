@@ -8,7 +8,7 @@
     <p style="margin: 5px 0 0; color: #666;">Всего наименований</p>
   </div>
   <div style="background: #d4edda; padding: 15px; border-radius: 8px; text-align: center;">
-    <h3 style="margin: 0; color: #155724;"><%= @total_quantity %></h3>
+    <h3 style="margin: 0; color: #155724;"><%= RedmineExpense::Quantity.format(@total_quantity) %></h3>
     <p style="margin: 5px 0 0; color: #155724;">Общее количество</p>
   </div>
   <div style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center;">
@@ -46,7 +46,7 @@
         <td><%= material.brand %></td>
         <td><%= material.model %></td>
         <td style="<%= 'color: red; font-weight: bold;' if material.low_stock? %>">
-          <%= material.quantity %>
+          <%= RedmineExpense::Quantity.format(material.quantity) %>
         </td>
         <td><%= material.description %></td>
         <% if expense_manager? %>

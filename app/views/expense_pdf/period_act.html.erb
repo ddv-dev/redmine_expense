@@ -54,32 +54,18 @@
     </tbody>
   </table>
 
+  <% chairman_signature = chairman ? signatures.find { |s| s.user_id == chairman.id } : nil %>
+  <% committee_signatures = signatures.reject { |s| chairman && s.user_id == chairman.id } %>
+
   <div class="sig-block">
-    <% if chairman %>
+    <% if chairman && chairman_signature %>
       <div class="sig-role">Председатель</div>
-      <div class="sig-plain">
-        <span class="sig-line"></span>
-        <span class="sig-name"><%= chairman.name %></span>
-      </div>
+      <%= render 'signature_row', signature: chairman_signature %>
     <% end %>
 
     <div class="sig-role">Члены комиссии</div>
-    <% signatures.each do |signature| %>
-      <% if signature.status == 'signed' %>
-        <div class="esign-box">
-          <p>Документ подписан простой электронной подписью</p>
-          <p>ФИО: <%= signature.user&.name %></p>
-          <p>Логин: <%= signature.user&.login %></p>
-          <p>Дата подписания: <%= signature.signed_at ? RedmineExpense::RussianDate.short(signature.signed_at) : '-' %></p>
-        </div>
-      <% else %>
-        <div class="sig-plain">
-          <span class="sig-line"></span>
-          <span class="sig-name">
-            <%= signature.user&.name %><% if !signature.requested? && signature.skip_reason.present? %> — <%= signature.skip_reason %><% end %>
-          </span>
-        </div>
-      <% end %>
+    <% committee_signatures.each do |signature| %>
+      <%= render 'signature_row', signature: signature %>
     <% end %>
   </div>
 </body>

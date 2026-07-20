@@ -38,7 +38,7 @@ class ExpenseController < ApplicationController
     stock = find_stock_by_name(params[:material_name])
 
     if stock
-      render json: { id: stock.id, brand: stock.brand, model: stock.model, quantity: stock.quantity }
+      render json: { id: stock.id, brand: stock.brand, model: stock.model, quantity: RedmineExpense::Quantity.format(stock.quantity) }
     else
       render json: { error: 'Материал не найден' }, status: :not_found
     end
@@ -74,9 +74,9 @@ class ExpenseController < ApplicationController
     pending_quantity = stock.reserved_quantity(exclude_issue_id: @issue.id)
 
     render json: {
-      quantity: stock.quantity,
-      pending_quantity: pending_quantity,
-      available_quantity: [available_quantity, 0].max,
+      quantity: RedmineExpense::Quantity.format(stock.quantity),
+      pending_quantity: RedmineExpense::Quantity.format(pending_quantity),
+      available_quantity: RedmineExpense::Quantity.format([available_quantity, 0].max),
       available: available_quantity > 0,
       display_name: stock.display_name
     }
