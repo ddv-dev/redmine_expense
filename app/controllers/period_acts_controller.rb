@@ -7,10 +7,10 @@ class PeriodActsController < ApplicationController
 
   # Собирает акт по всем списаниям проекта за период, снэпшотит состав
   # комиссии/председателя из текущих настроек проекта и заводит по одной
-  # ожидающей подписи на каждого члена комиссии (requested — только на тех,
-  # кого отметили в форме "Отправить комиссии") плюс всегда одну на
-  # председателя — он подписывает наравне с комиссией, его подпись нельзя
-  # пропустить.
+  # ожидающей подписи на каждого члена комиссии и на председателя — requested
+  # выставляется по чекбоксам формы "Отправить комиссии" одинаково для всех
+  # (включая председателя, его подпись тоже можно пропустить с указанием
+  # причины).
   def create
     start_date = parse_date(params[:start_date])
     end_date = parse_date(params[:end_date])
@@ -22,19 +22,23 @@ class PeriodActsController < ApplicationController
 
     setting = ExpenseProjectSetting.for_project(@project)
     committee_ids = setting.committee_id_list
+    chairman_id = setting.chairman_id.presence&.to_s
 
     if committee_ids.empty?
       flash[:error] = 'В проекте не настроена комиссия — добавьте её в настройках проекта на вкладке "Расход"'
       redirect_to history_index_path(project_id: @project.id) and return
     end
 
-    requested_ids = Array(params[:signer_ids]).map(&:to_s) & committee_ids
+    signer_ids = Array(params[:signer_ids]).map(&:to_s)
+    requested_ids = signer_ids & committee_ids
+    chairman_requested = chairman_id.present? && signer_ids.include?(chairman_id)
+
     raw_skip_reasons = params[:skip_reasons]
     raw_skip_reasons = raw_skip_reasons.respond_to?(:to_unsafe_h) ? raw_skip_reasons.to_unsafe_h : (raw_skip_reasons || {})
     skip_reasons = raw_skip_reasons.transform_keys(&:to_s).transform_values { |v| v.to_s.strip }
 
-    if requested_ids.empty?
-      flash[:error] = 'Отметьте хотя бы одного члена комиссии, чья подпись запрашивается — иначе акт никто не сможет подписать'
+    if requested_ids.empty? && !chairman_requested
+      flash[:error] = 'Отметьте хотя бы одного члена комиссии или председателя, чья подпись запрашивается — иначе акт никто не сможет подписать'
       redirect_to history_index_path(project_id: @project.id) and return
     end
 
@@ -71,15 +75,15 @@ class PeriodActsController < ApplicationController
       end
 
       # Председатель подписывает акт в системе наравне с членами комиссии —
-      # его подпись всегда запрашивается (пропустить нельзя), даже если он
-      # также значится в списке комиссии.
-      if act.chairman_id.present?
-        chairman_signature = act.period_act_signatures.find_by(user_id: act.chairman_id)
-        if chairman_signature
-          chairman_signature.update!(requested: true, skip_reason: nil) unless chairman_signature.requested?
-        else
-          PeriodActSignature.create!(period_act: act, user_id: act.chairman_id, requested: true)
-        end
+      # ту же самую подпись (и возможность пропустить ее с указанием причины)
+      # заводим и ему, если он еще не получил её выше как член комиссии.
+      if chairman_id.present? && !committee_ids.include?(chairman_id)
+        PeriodActSignature.create!(
+          period_act: act,
+          user_id: chairman_id,
+          requested: chairman_requested,
+          skip_reason: chairman_requested ? nil : skip_reasons[chairman_id].presence
+        )
       end
     end
 
