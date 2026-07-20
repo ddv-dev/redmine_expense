@@ -112,23 +112,15 @@
       <% if act_committee_users.empty? %>
         <p>Комиссия не настроена. <%= link_to 'Настроить в проекте (Настройки -> Расход)', settings_project_path(@project, tab: 'expense') %></p>
       <% else %>
-        <p style="font-size:13px;">Снимите галку у тех, чью подпись сейчас запрашивать не нужно (например, в отпуске) — в акте они всё равно будут числиться комиссии/председателем.</p>
+        <% if act_chairman %>
+          <p style="color:#666; font-size:13px;">Председатель: <%= act_chairman.name %> (подпись будет запрошена автоматически, пропустить нельзя)</p>
+        <% end %>
+        <p style="font-size:13px;">Снимите галку у тех, чью подпись сейчас запрашивать не нужно (например, в отпуске) — в акте они всё равно будут числиться членами комиссии.</p>
         <div style="max-height:260px; overflow-y:auto; border:1px solid #e5e5e5; border-radius:4px; padding:8px;">
-          <% if act_chairman && !act_committee_users.any? { |u| u.id == act_chairman.id } %>
-            <div class="generate-act-signer-row" style="padding:3px 0; border-bottom:1px solid #eee; margin-bottom:6px;">
-              <label style="display:block; font-weight:bold;">
-                <input type="checkbox" class="generate-act-signer" value="<%= act_chairman.id %>" checked> <%= act_chairman.name %> (Председатель)
-              </label>
-              <input type="text" class="generate-act-skip-reason" data-user-id="<%= act_chairman.id %>"
-                     placeholder="Причина, почему подпись не запрашивается (например, «В отпуске»)"
-                     style="display:none; width:100%; margin:4px 0 2px; box-sizing:border-box;">
-            </div>
-          <% end %>
           <% act_committee_users.each do |user| %>
             <div class="generate-act-signer-row" style="padding:3px 0;">
               <label style="display:block;">
-                <input type="checkbox" class="generate-act-signer" value="<%= user.id %>" checked>
-                <%= user.name %><%= ' (Председатель)' if act_chairman && user.id == act_chairman.id %>
+                <input type="checkbox" class="generate-act-signer" value="<%= user.id %>" checked> <%= user.name %>
               </label>
               <input type="text" class="generate-act-skip-reason" data-user-id="<%= user.id %>"
                      placeholder="Причина, почему подпись не запрашивается (например, «В отпуске»)"

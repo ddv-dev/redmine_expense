@@ -131,7 +131,7 @@
         <option value="<%= user.id %>" <%= 'selected' if expense_setting.chairman_id.to_s == user.id.to_s %>><%= user.name %></option>
       <% end %>
     </select>
-    <span class="expense-settings-hint">Указывается в акте как "Председатель" и подписывает акт в системе наравне с членами комиссии — при генерации акта его подпись, как и подпись любого члена комиссии, можно не запрашивать (например, если он в отпуске)</span>
+    <span class="expense-settings-hint">Указывается в акте как "Председатель" — его подпись запрашивается всегда, наравне с членами комиссии (пропустить нельзя)</span>
   </div>
 
   <p><%= submit_tag l(:button_save) %></p>

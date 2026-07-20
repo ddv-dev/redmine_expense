@@ -1,15 +1,16 @@
 #!/bin/bash
-# Тестовый скрипт: подписывает акт(ы) за период "за всех" — за каждого члена
-# комиссии и за председателя, у кого запрошена подпись (requested: true,
-# status: pending) — минуя необходимость реально заходить под каждым из них
-# в Redmine. Использует ту же логику (PeriodAct#sign!), что и кнопка
-# "Подписать" в интерфейсе, поэтому финальный PDF генерируется автоматически,
-# как только подписан последний из запрошенных.
+# Тестовый скрипт: подписывает акт(ы) за период за всех членов комиссии, у
+# кого запрошена подпись (requested: true, status: pending), КРОМЕ
+# председателя — его подпись обязательна и всегда должна ставиться реально
+# (председатель заходит и подписывает сам). Использует ту же логику
+# (PeriodAct#sign!), что и кнопка "Подписать" в интерфейсе — акт при этом
+# полностью подписанным не станет и PDF не сгенерируется, пока председатель
+# не подпишет сам.
 #
 # Использование (запускать из любой директории, путь к Redmine — первым
 # аргументом):
-#   ./sign_period_act.sh /var/www/redmine          # подписать ВСЕ акты в статусе pending
-#   ./sign_period_act.sh /var/www/redmine 42        # подписать только акт #42
+#   ./sign_period_act.sh /var/www/redmine          # подписать комиссию (без председателя) во ВСЕХ актах в статусе pending
+#   ./sign_period_act.sh /var/www/redmine 42        # подписать комиссию (без председателя) только в акте #42
 #
 # Прим.: RAILS_ENV=production указывается ПЕРЕД командой (rails runner), а не
 # после, как для rake — это разные соглашения, легко перепутать.
@@ -33,7 +34,10 @@ end
 acts.find_each do |act|
   puts "Акт ##{act.id} (проект ##{act.project_id}, период #{act.start_date}..#{act.end_date}):"
 
-  act.period_act_signatures.where(requested: true, status: 'pending').includes(:user).each do |signature|
+  signatures = act.period_act_signatures.where(requested: true, status: 'pending').includes(:user)
+  signatures = signatures.where.not(user_id: act.chairman_id) if act.chairman_id.present?
+
+  signatures.each do |signature|
     if signature.user.nil?
       puts "  пропущен: пользователь ##{signature.user_id} не найден"
       next
@@ -48,6 +52,7 @@ acts.find_each do |act|
 
   act.reload
   status_line = "  итоговый статус акта: #{act.status}"
+  status_line += " (осталось дождаться подписи председателя)" if act.pending? && act.chairman_id.present?
   status_line += ", PDF: #{act.pdf_file}" if act.pdf_file.present?
   puts status_line
 end
