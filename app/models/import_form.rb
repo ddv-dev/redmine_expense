@@ -141,7 +141,54 @@ class ImportForm
     
     { data: data, errors: errors, skipped: skipped, skipped_details: skipped_details, merged: merged, excluded_batch: excluded_batch }
   end
-  
+
+  # Для чистки уже загруженного склада: разбирает тот же файл и возвращает
+  # ключи позиций (hash_key = номенклатура+поставщик+модификация), которые
+  # встречаются ТОЛЬКО в партиях с "з02" в коде партии. Именно такие позиции
+  # были заведены исключительно из исключаемых партий и подлежат удалению.
+  # Позиции, у которых есть хотя бы одна обычная партия, из результата
+  # исключаются — их количество к з02 не сводится, трогать нельзя.
+  def z02_only_hash_keys(file_path = nil)
+    file_to_read = file_path || (file.present? ? file.path : nil)
+    return { pure: [], z02_any: [], errors: ['Файл не выбран'] } if file_to_read.blank?
+
+    z02_keys = {}
+    normal_keys = {}
+    info = {}
+    errors = []
+
+    begin
+      workbook = Roo::Excelx.new(file_to_read)
+      sheet = workbook.sheet(0)
+
+      sheet.each_with_index do |row, index|
+        next if index == 0
+
+        material_type = row[1].to_s.strip
+        model = row[4].to_s.strip
+        brand = row[6].to_s.strip
+        batch_code = row[12].to_s.strip
+
+        next if material_type.blank? || model.blank? || brand.blank?
+
+        hash_key = MaterialStock.build_hash_key(material_type, brand, model)
+        info[hash_key] ||= { material_type: material_type, brand: brand, model: model }
+
+        if batch_code.downcase.include?('з02')
+          z02_keys[hash_key] = true
+        else
+          normal_keys[hash_key] = true
+        end
+      end
+    rescue => e
+      errors << "Ошибка при чтении файла: #{e.message}"
+    end
+
+    pure = z02_keys.keys.reject { |k| normal_keys.key?(k) }
+    { pure: pure, z02_any: z02_keys.keys, info: info, errors: errors }
+  end
+
+
   def preview_from_data(data, project_id)
     preview_data = []
     mismatches = []
