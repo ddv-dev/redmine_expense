@@ -162,6 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <span class="import-stat"><strong>${data.new}</strong> <span class="import-stat-label">Новых позиций</span></span>
         <span class="import-stat"><strong>${data.mismatches.length}</strong> <span class="import-stat-label">Расхождений по количеству</span></span>
         <span class="import-stat" style="background: #d1ecf1;"><strong>${data.merged || 0}</strong> <span class="import-stat-label">Объединено партий</span></span>
+        <span class="import-stat" style="background: #e2e3e5;"><strong>${data.excluded_batch || 0}</strong> <span class="import-stat-label">Исключено (Код партии «з02»)</span></span>
         <span class="import-stat" style="background: #f8d7da;"><strong>${data.skipped || 0}</strong> <span class="import-stat-label">Пропущено</span></span>
       </div>
     `;

@@ -42,7 +42,8 @@ class ImportController < ApplicationController
         new: preview_result[:new],
         skipped: result[:skipped],
         skipped_details: result[:skipped_details],
-        merged: result[:merged]
+        merged: result[:merged],
+        excluded_batch: result[:excluded_batch]
       }
     else
       render json: { success: false, errors: @import.errors.full_messages }

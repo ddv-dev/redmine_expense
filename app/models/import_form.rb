@@ -17,6 +17,7 @@ class ImportForm
     skipped = 0
     skipped_details = []
     merged = 0
+    excluded_batch = 0
     index_by_hash = {}
     
     begin
@@ -31,7 +32,16 @@ class ImportForm
         material_name = row[2].to_s.strip # "Наименование номенклатуры" — полное название (колонка "Номенклатура" в выгрузке обрезана)
         model = row[4].to_s.strip
         brand = row[6].to_s.strip
-        
+        batch_code = row[12].to_s.strip # "Код партии"
+
+        # Партии с "з02" в коде (например, 05409010000000000000.з02.<>-ОМС-<>-27)
+        # по требованию заказчика в склад плагина не заводятся — исключаем такие
+        # строки целиком, не считая их ошибкой импорта.
+        if batch_code.downcase.include?('з02')
+          excluded_batch += 1
+          next
+        end
+
         # Проверяем обязательные поля
         skip_reasons = []
         
@@ -129,7 +139,7 @@ class ImportForm
       errors << "Ошибка при чтении файла: #{e.message}"
     end
     
-    { data: data, errors: errors, skipped: skipped, skipped_details: skipped_details, merged: merged }
+    { data: data, errors: errors, skipped: skipped, skipped_details: skipped_details, merged: merged, excluded_batch: excluded_batch }
   end
   
   def preview_from_data(data, project_id)
